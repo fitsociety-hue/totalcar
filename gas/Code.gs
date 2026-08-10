@@ -60,6 +60,18 @@ function doPost(e) {
         resultData = sendGoogleChatNotification(contents);
         break;
 
+      case 'createVehicle':
+        resultData = addVehicleRecord(ss, contents);
+        break;
+
+      case 'updateVehicle':
+        resultData = updateVehicleRecord(ss, contents);
+        break;
+
+      case 'deleteVehicle':
+        resultData = deleteVehicleRecord(ss, contents);
+        break;
+
       default:
         throw new Error('알 수 없는 Action 요청입니다: ' + action);
     }
@@ -335,9 +347,90 @@ function sendGoogleChatNotification(data) {
       payload: payload,
       muteHttpExceptions: true
     });
-    return { sent: true };
   } catch (err) {
     Logger.log('Google Chat Error: ' + err.toString());
     return { sent: false, error: err.toString() };
   }
+}
+
+/**
+ * 신규 차량/하이패스/보험 등록
+ */
+function addVehicleRecord(ss, data) {
+  var vehSheet = ss.getSheetByName('Vehicles');
+  if (!vehSheet) vehSheet = ss.insertSheet('Vehicles');
+
+  var v = data.vehicle || {};
+  var ins = data.insurance || {};
+
+  vehSheet.appendRow([
+    v.vehicle_id,
+    v.model,
+    v.register_date,
+    v.insurance_start,
+    v.insurance_end,
+    v.status,
+    v.current_mileage,
+    v.hipass_id,
+    v.hipass_card,
+    v.note
+  ]);
+
+  var insSheet = ss.getSheetByName('Insurance');
+  if (insSheet) {
+    insSheet.appendRow([
+      v.vehicle_id,
+      ins.company,
+      ins.policy_number,
+      ins.contractor,
+      ins.claim_phone,
+      ins.insurance_start,
+      ins.insurance_end,
+      ins.coverage
+    ]);
+  }
+
+  return { success: true, vehicle_id: v.vehicle_id };
+}
+
+/**
+ * 차량/하이패스/보험 정보 수정
+ */
+function updateVehicleRecord(ss, data) {
+  var vehSheet = ss.getSheetByName('Vehicles');
+  if (!vehSheet) return { success: false };
+
+  var v = data.vehicle || {};
+  var rows = vehSheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0] === v.vehicle_id) {
+      vehSheet.getRange(i + 1, 2).setValue(v.model);
+      vehSheet.getRange(i + 1, 6).setValue(v.status);
+      vehSheet.getRange(i + 1, 7).setValue(v.current_mileage);
+      vehSheet.getRange(i + 1, 8).setValue(v.hipass_id);
+      vehSheet.getRange(i + 1, 9).setValue(v.hipass_card);
+      break;
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * 차량 삭제
+ */
+function deleteVehicleRecord(ss, data) {
+  var vehSheet = ss.getSheetByName('Vehicles');
+  if (!vehSheet) return { success: false };
+
+  var vehicleId = data.vehicle_id;
+  var rows = vehSheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0] === vehicleId) {
+      vehSheet.deleteRow(i + 1);
+      break;
+    }
+  }
+
+  return { success: true };
 }

@@ -6,6 +6,7 @@ const AppStore = {
     currentUser: null,
     activeVehicleId: '236루5818',
     activeTab: 'home',
+    viewMode: 'mobile', // 'mobile' | 'desktop'
     data: MOCK_DATA,
     loading: false,
     selectedDate: new Date().toISOString().split('T')[0]
@@ -42,31 +43,33 @@ const AppStore = {
     this.setState({ loading: true });
     try {
       const fetched = await AppAPI.request('getInitialData');
-      if (fetched) {
-        const users = fetched.Users || MOCK_DATA.Users;
-        
-        // LocalStorage 저장된 세션 유저 복원
-        let restoredUser = null;
-        try {
-          const savedSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
-          if (savedSession) {
-            const parsed = JSON.parse(savedSession);
-            restoredUser = users.find(u => u.user_id === parsed.user_id || u.email === parsed.email) || parsed;
-          }
-        } catch (e) {
-          console.warn('Session parse error:', e);
-        }
+      const validData = (fetched && Array.isArray(fetched.Vehicles) && fetched.Vehicles.length > 0)
+        ? { ...MOCK_DATA, ...fetched }
+        : MOCK_DATA;
 
-        const defaultUser = restoredUser || users[0];
-        const defaultVeh = fetched.Vehicles ? fetched.Vehicles[0].vehicle_id : '236루5818';
-        
-        this.setState({
-          data: fetched,
-          currentUser: defaultUser,
-          activeVehicleId: defaultVeh,
-          loading: false
-        });
+      const users = validData.Users || MOCK_DATA.Users;
+      
+      // LocalStorage 저장된 세션 유저 복원
+      let restoredUser = null;
+      try {
+        const savedSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          restoredUser = users.find(u => u.user_id === parsed.user_id || u.email === parsed.email) || parsed;
+        }
+      } catch (e) {
+        console.warn('Session parse error:', e);
       }
+
+      const defaultUser = restoredUser || users[0];
+      const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '236루5818';
+      
+      this.setState({
+        data: validData,
+        currentUser: defaultUser,
+        activeVehicleId: defaultVeh,
+        loading: false
+      });
     } catch (e) {
       console.error('Initial data load error:', e);
       this.setState({ loading: false });
@@ -201,6 +204,105 @@ const AppStore = {
     });
 
     return conflicts.length > 0;
+  },
+
+  /**
+   * 차량, 하이패스, 보험 통합 등록
+   */
+  async createVehicle(vehicleData, insuranceData) {
+    const vehicles = [...(this.state.data.Vehicles || [])];
+    const insurances = [...(this.state.data.Insurance || [])];
+
+    // 기존 차량번호 중복 검증
+    const existing = vehicles.find(v => v.vehicle_id === vehicleData.vehicle_id);
+    if (existing) {
+      return { success: false, message: '이미 등록된 차량번호입니다.' };
+    }
+
+    const newVehicle = {
+      vehicle_id: vehicleData.vehicle_id,
+      model: vehicleData.model || '현대 스타리아 (9인승 승합)',
+      register_date: vehicleData.register_date || new Date().toISOString().split('T')[0],
+      insurance_start: insuranceData.insurance_start || new Date().toISOString().split('T')[0],
+      insurance_end: insuranceData.insurance_end || '2027-12-31',
+      status: vehicleData.status || '운행가능',
+      current_mileage: Number(vehicleData.current_mileage) || 0,
+      hipass_id: vehicleData.hipass_id || 'HP-000000',
+      hipass_card: vehicleData.hipass_card || '9410-****-0000',
+      note: vehicleData.note || ''
+    };
+
+    const newInsurance = {
+      vehicle_id: vehicleData.vehicle_id,
+      company: insuranceData.company || 'DB손해보험',
+      policy_number: insuranceData.policy_number || `POL-${Date.now()}`,
+      contractor: insuranceData.contractor || '강동어울림복지관',
+      claim_phone: insuranceData.claim_phone || '1588-0100',
+      insurance_start: insuranceData.insurance_start || new Date().toISOString().split('T')[0],
+      insurance_end: insuranceData.insurance_end || '2027-12-31',
+      coverage: insuranceData.coverage || '대인 무제한 / 대물 5억 / 자차 포함'
+    };
+
+    vehicles.push(newVehicle);
+    insurances.push(newInsurance);
+
+    const updatedData = { ...this.state.data, Vehicles: vehicles, Insurance: insurances };
+    AppAPI.saveStorage(updatedData);
+
+    this.setState({
+      data: updatedData,
+      activeVehicleId: newVehicle.vehicle_id
+    });
+
+    await AppAPI.request('createVehicle', { vehicle: newVehicle, insurance: newInsurance });
+    return { success: true, vehicle: newVehicle };
+  },
+
+  /**
+   * 차량, 하이패스, 보험 정보 수정
+   */
+  async updateVehicle(vehicleId, vehicleData, insuranceData) {
+    const vehicles = [...(this.state.data.Vehicles || [])];
+    const insurances = [...(this.state.data.Insurance || [])];
+
+    const vIdx = vehicles.findIndex(v => v.vehicle_id === vehicleId);
+    if (vIdx !== -1) {
+      vehicles[vIdx] = { ...vehicles[vIdx], ...vehicleData };
+    }
+
+    const iIdx = insurances.findIndex(i => i.vehicle_id === vehicleId);
+    if (iIdx !== -1) {
+      insurances[iIdx] = { ...insurances[iIdx], ...insuranceData };
+    } else if (insuranceData) {
+      insurances.push({ vehicle_id: vehicleId, ...insuranceData });
+    }
+
+    const updatedData = { ...this.state.data, Vehicles: vehicles, Insurance: insurances };
+    AppAPI.saveStorage(updatedData);
+
+    this.setState({ data: updatedData });
+    await AppAPI.request('updateVehicle', { vehicle: vehicles[vIdx], insurance: insurances[iIdx] });
+    return { success: true };
+  },
+
+  /**
+   * 차량 삭제
+   */
+  async deleteVehicle(vehicleId) {
+    const vehicles = (this.state.data.Vehicles || []).filter(v => v.vehicle_id !== vehicleId);
+    const insurances = (this.state.data.Insurance || []).filter(i => i.vehicle_id !== vehicleId);
+
+    if (vehicles.length === 0) {
+      return { success: false, message: '최소 1대 이상의 차량이 등록되어 있어야 합니다.' };
+    }
+
+    const updatedData = { ...this.state.data, Vehicles: vehicles, Insurance: insurances };
+    AppAPI.saveStorage(updatedData);
+
+    const newActiveId = vehicles[0].vehicle_id;
+    this.setState({ data: updatedData, activeVehicleId: newActiveId });
+    await AppAPI.request('deleteVehicle', { vehicle_id: vehicleId });
+    return { success: true };
   }
 };
 

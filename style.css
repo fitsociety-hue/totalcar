@@ -163,16 +163,31 @@ a {
 .app-wrapper {
   margin-top: 40px;
   display: flex;
+  justify-content: center;
+  align-items: flex-start;
   width: 100%;
   max-width: 1380px;
   gap: 24px;
 }
 
+.app-wrapper.mode-mobile .mobile-frame {
+  margin: 0 auto;
+}
+
+.app-wrapper.mode-mobile .desktop-workspace {
+  display: none !important;
+}
+
+.app-wrapper.mode-desktop .desktop-workspace {
+  display: flex !important;
+}
+
 /* Mobile Device Frame Simulator */
 .mobile-frame {
-  width: 390px;
-  min-width: 390px;
-  height: 830px;
+  width: 400px;
+  min-width: 360px;
+  height: 820px;
+  max-height: calc(100vh - 60px);
   background: var(--bg-surface);
   border-radius: 44px;
   border: 10px solid #222632;
@@ -343,8 +358,8 @@ a {
 
 /* Vehicle Overhead Card (Mercedes Style Interactive Visualizer) */
 .vehicle-card {
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border-glass-strong);
@@ -354,23 +369,23 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .vehicle-name-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.3px;
 }
 
 .topview-container {
   width: 100%;
-  height: 280px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  margin: 10px 0;
+  margin: 6px 0;
 }
 
 .topview-container svg {
@@ -742,24 +757,54 @@ a {
 
 /* Responsive Breakpoints */
 @media (max-width: 960px) {
+  /* 1. 모바일에서 상단 권한 테스트 바 숨김 */
+  #role-test-bar {
+    display: none !important;
+  }
+
   #app-container {
     flex-direction: column;
     align-items: center;
-    padding: 10px;
+    padding: 0;
   }
+
   .app-wrapper {
     flex-direction: column;
     align-items: center;
+    margin-top: 0;
+    gap: 0;
   }
+
   .mobile-frame {
     width: 100%;
-    max-width: 420px;
-    height: 800px;
-    border-width: 4px;
-    border-radius: 28px;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
+
   .desktop-workspace {
-    width: 100%;
-    min-height: auto;
+    display: none !important;
   }
+
+  /* 3. 하단 탭바 잘림 방지 */
+  .mobile-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    z-index: 9999;
+  }
+
+  .mobile-content {
+    padding-bottom: 80px;
+  }
+
+  /* 모바일 상태바 및 노치 숨김 */
+  .notch { display: none; }
+  .mobile-status-bar { display: none; }
 }

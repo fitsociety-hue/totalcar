@@ -170,6 +170,21 @@ const AppAPI = {
         throw new Error('차량을 찾을 수 없습니다.');
       }
 
+      case 'createVehicle': {
+        console.log('🚗 [Vehicle Create API] Added vehicle:', payload.vehicle);
+        return { success: true };
+      }
+
+      case 'updateVehicle': {
+        console.log('✏️ [Vehicle Update API] Updated vehicle:', payload.vehicle);
+        return { success: true };
+      }
+
+      case 'deleteVehicle': {
+        console.log('🗑️ [Vehicle Delete API] Deleted vehicle ID:', payload.vehicle_id);
+        return { success: true };
+      }
+
       default:
         return db;
     }

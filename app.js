@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const desktopWorkspace = document.getElementById('desktop-workspace');
   const tabItems = document.querySelectorAll('.tab-item');
   const modalOverlay = document.getElementById('modal-overlay');
+  const btnViewMobile = document.getElementById('btn-view-mobile');
+  const btnViewDesktop = document.getElementById('btn-view-desktop');
+  const appWrapper = document.querySelector('.app-wrapper');
 
   // 스플래시 화면 1.2초 후 자동 숨김
   setTimeout(() => {
@@ -59,6 +62,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnMobileLogin = document.getElementById('btn-mobile-login');
   if (btnMobileLogin) btnMobileLogin.addEventListener('click', openLoginModal);
 
+  // 뷰 모드 전환 버튼 핸들러 (모바일 전용 vs PC 대시보드)
+  if (btnViewMobile) {
+    btnViewMobile.addEventListener('click', () => {
+      AppStore.setState({ viewMode: 'mobile' });
+      showToast('📱 모바일 앱 전용 뷰로 전환되었습니다.');
+    });
+  }
+
+  if (btnViewDesktop) {
+    btnViewDesktop.addEventListener('click', () => {
+      AppStore.setState({ viewMode: 'desktop' });
+      showToast('🖥️ PC 대시보드 뷰로 전환되었습니다.');
+    });
+  }
+
   // 4.2 모바일 하단 탭바 전환
   tabItems.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -80,9 +98,36 @@ document.addEventListener('DOMContentLoaded', async () => {
    * 메인 렌더링 루틴
    */
   function renderApp(state) {
-    const { currentUser, activeVehicleId, activeTab, data } = state;
+    const { currentUser, activeVehicleId, activeTab, viewMode, data } = state;
     const activeVehicle = AppStore.getActiveVehicle();
     const insurance = data.Insurance.find(i => i.vehicle_id === activeVehicleId);
+
+    // 뷰 모드 클래스 적용
+    if (appWrapper) {
+      if (viewMode === 'mobile') {
+        appWrapper.classList.add('mode-mobile');
+        appWrapper.classList.remove('mode-desktop');
+        if (btnViewMobile) {
+          btnViewMobile.style.borderColor = 'var(--accent-gold)';
+          btnViewMobile.style.color = 'var(--accent-gold)';
+        }
+        if (btnViewDesktop) {
+          btnViewDesktop.style.borderColor = 'var(--border-glass)';
+          btnViewDesktop.style.color = 'var(--text-main)';
+        }
+      } else {
+        appWrapper.classList.add('mode-desktop');
+        appWrapper.classList.remove('mode-mobile');
+        if (btnViewDesktop) {
+          btnViewDesktop.style.borderColor = 'var(--accent-gold)';
+          btnViewDesktop.style.color = 'var(--accent-gold)';
+        }
+        if (btnViewMobile) {
+          btnViewMobile.style.borderColor = 'var(--border-glass)';
+          btnViewMobile.style.color = 'var(--text-main)';
+        }
+      }
+    }
 
     // 상단바 및 모바일 헤더 사용자 세션 정보 반영
     const headerUserName = document.getElementById('header-user-name');
@@ -105,16 +150,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btnLogout) btnLogout.style.display = 'none';
     }
 
-    // [A] 모바일 뷰 렌더링 (탭별 분기)
+    // [A] 모바일 뷰 렌더링 (탭별 분기 - 한 화면 1-Screen 최적화)
     if (mobileContent) {
       if (activeTab === 'home') {
         const pendingCount = data.DriveRequests.filter(r => r.approval_status === '대기').length;
         mobileContent.innerHTML = `
           ${AppComponents.renderVehicleVisualizer(activeVehicle, data.Vehicles)}
           ${AppComponents.renderDigitalExtras(activeVehicle, insurance, pendingCount)}
-          <div style="margin-top:16px;">
-            ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId)}
-          </div>
         `;
       } else if (activeTab === 'schedule') {
         mobileContent.innerHTML = `
@@ -132,7 +174,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vSelect = document.getElementById('vehicle-select-dropdown');
       if (vSelect) {
         vSelect.addEventListener('change', (e) => {
-          AppStore.setState({ activeVehicleId: e.target.value });
+          const val = e.target.value;
+          if (val === '__ADD_NEW__') {
+            openVehicleModal();
+          } else {
+            AppStore.setState({ activeVehicleId: val });
+            showToast(`🚘 선택 차량이 [${val}] (으)로 유기적 연동되었습니다.`);
+          }
         });
       }
 
@@ -148,12 +196,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h2>${APP_CONFIG.ORGANIZATION_NAME} 차량 통합 관리 대시보드</h2>
             <div style="font-size:0.85rem; color:var(--text-muted);">
               현재 접속자: <strong style="color:var(--accent-gold);">${currentUser ? currentUser.name : '김복지'}</strong> (${currentUser ? currentUser.position : '팀원'}) | 
-              선택 차량: <strong style="color:var(--status-emerald);">${activeVehicle.vehicle_id}</strong>
+              선택 차량: <strong style="color:var(--status-emerald);">${activeVehicle.vehicle_id}</strong> (${activeVehicle.model})
             </div>
           </div>
           <div style="display:flex; gap:10px;">
-            <button id="btn-desktop-request" class="btn-primary" style="width:auto; padding:8px 16px; font-size:0.85rem;">+ 운행 신청</button>
-            <button id="btn-desktop-report" class="btn-secondary" style="width:auto; padding:8px 16px; font-size:0.85rem;">📋 월별보고서 인쇄/PDF</button>
+            <button id="btn-desktop-add-veh" class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;">+ 신규 차량 등록 (9월 3호차)</button>
+            <button id="btn-desktop-request" class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;">+ 운행 신청</button>
+            <button id="btn-desktop-report" class="btn-secondary" style="width:auto; padding:8px 14px; font-size:0.85rem;">📋 월별보고서 인쇄/PDF</button>
           </div>
         </div>
 
@@ -170,10 +219,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${renderMaintenanceAndAccidentsTab(data, activeVehicleId)}
         </div>
 
+        ${AppComponents.renderVehicleManagementPanel(data.Vehicles, data.Insurance)}
         ${AppComponents.renderGoogleWorkspacePanel()}
       `;
 
       // 데스크톱 상단 버튼 이벤트 바인딩
+      const btnDeskAdd = document.getElementById('btn-desktop-add-veh');
+      if (btnDeskAdd) btnDeskAdd.addEventListener('click', () => openVehicleModal());
       const btnDeskReq = document.getElementById('btn-desktop-request');
       if (btnDeskReq) btnDeskReq.addEventListener('click', openRequestModal);
       const btnDeskRep = document.getElementById('btn-desktop-report');
@@ -250,35 +302,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderAdminAndReportTab(data, currentUser) {
-    const isApprover = ['팀장', '차량관리담당자', '사무국장', '관장'].includes(currentUser ? currentUser.position : '');
-    const pendingReqs = data.DriveRequests.filter(r => r.approval_status === '대기');
+    const allReqs = data.DriveRequests || [];
+    const todayReqs = allReqs.filter(r => r.drive_date === new Date().toISOString().slice(0,10));
 
     return `
       <div class="glass-panel" style="padding:16px;">
-        <h3 style="font-size:1rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:6px;"><span>⚙️</span> 결재 및 시스템 통합 관리자</h3>
+        <h3 style="font-size:1rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:6px;"><span>⚙️</span> 시스템 통합 관리</h3>
 
-        ${isApprover ? `
-          <div style="margin-bottom:16px; background:rgba(229,169,60,0.1); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass-strong);">
-            <h4 style="font-size:0.9rem; color:var(--accent-gold); margin-bottom:8px;">📌 결재 대기 운행 신청 (${pendingReqs.length}건)</h4>
-            ${pendingReqs.map(req => `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:var(--radius-sm); margin-bottom:6px;">
-                <div>
-                  <div style="font-weight:700; font-size:0.85rem;" class="nobr">${req.applicant_name} (${req.team})</div>
-                  <div style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${req.vehicle_id} | ${req.drive_date} (${req.start_time}~${req.end_time})</div>
-                </div>
-                <div style="display:flex; gap:6px;">
-                  <button class="btn-approve-req btn-primary" data-id="${req.request_id}" style="padding:4px 8px; font-size:0.75rem; width:auto;">승인</button>
-                  <button class="btn-reject-req btn-secondary" data-id="${req.request_id}" style="padding:4px 8px; font-size:0.75rem; width:auto; color:var(--status-rose);">반려</button>
-                </div>
+        <div style="margin-bottom:16px; background:rgba(16,185,129,0.1); padding:12px; border-radius:var(--radius-md); border:1px solid rgba(16,185,129,0.3);">
+          <h4 style="font-size:0.9rem; color:#10B981; margin-bottom:8px;">🔄 오늘 예약 현황 (${todayReqs.length}건) — 중복 자동 방지</h4>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">동일 차량·동일 시간대 중복 신청 시 자동 차단됩니다.</div>
+          ${todayReqs.map(req => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:var(--radius-sm); margin-bottom:6px;">
+              <div>
+                <div style="font-weight:700; font-size:0.85rem;" class="nobr">${req.applicant_name} (${req.team || '-'})</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${req.vehicle_id} | ${req.drive_date} (${req.start_time}~${req.end_time})</div>
               </div>
-            `).join('') || '<div style="font-size:0.8rem; color:var(--text-dim);">대기 중인 운행 신청이 없습니다.</div>'}
-          </div>
-        ` : ''}
+              <span style="font-size:0.75rem; padding:2px 8px; border-radius:10px; background:rgba(16,185,129,0.2); color:#10B981; font-weight:600;">확정</span>
+            </div>
+          `).join('') || '<div style="font-size:0.8rem; color:var(--text-dim);">오늘 예약이 없습니다.</div>'}
+        </div>
 
         <button id="btn-open-monthly-report" class="btn-primary" style="margin-top:10px;">
           📋 월별 운행일지 결재 보고서 조회 및 인쇄 (PDF)
         </button>
 
+        ${AppComponents.renderVehicleManagementPanel(data.Vehicles, data.Insurance)}
         ${AppComponents.renderGoogleWorkspacePanel()}
       </div>
     `;
@@ -302,6 +351,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnRep = document.getElementById('btn-open-monthly-report');
     if (btnRep) btnRep.addEventListener('click', openMonthlyReportModal);
+
+    // 차량, 하이패스, 보험 등록 및 관리 버튼 핸들러
+    const btnAddVeh = document.getElementById('btn-open-add-vehicle-modal');
+    if (btnAddVeh) btnAddVeh.addEventListener('click', () => openVehicleModal());
+
+    document.querySelectorAll('.btn-edit-vehicle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const veh = AppStore.state.data.Vehicles.find(v => v.vehicle_id === id);
+        if (veh) openVehicleModal(veh);
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-vehicle').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (confirm(`차량 [${id}] 정보 및 연동 하이패스/보험 데이터를 삭제하시겠습니까?`)) {
+          const res = await AppStore.deleteVehicle(id);
+          if (res.success) {
+            showToast(`🗑️ 차량 [${id}] 정보가 삭제되었습니다.`);
+          } else {
+            showToast(res.message, 'error');
+          }
+        }
+      });
+    });
 
     // 구글 워크스페이스 메일 / 챗 테스트 버튼 핸들러
     const btnGmail = document.getElementById('btn-gsuite-gmail-test');
@@ -327,29 +402,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // 승인 / 반려 버튼 핸들러
-    document.querySelectorAll('.btn-approve-req').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        await AppAPI.request('approveDriveRequest', { request_id: id, status: '승인', approver_id: AppStore.state.currentUser.user_id });
-        await AppStore.loadInitialData();
-        showToast('운행 신청이 승인되었습니다.');
-      });
-    });
-
-    document.querySelectorAll('.btn-reject-req').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        await AppAPI.request('approveDriveRequest', { request_id: id, status: '반려', approver_id: AppStore.state.currentUser.user_id });
-        await AppStore.loadInitialData();
-        showToast('운행 신청이 반려되었습니다.');
-      });
-    });
+    // (승인/반려 제거됨 — 중복 예약 자동 검증으로 대체)
   }
 
   /**
    * 모달 오픈 함수들
    */
+  function openVehicleModal(vehicleToEdit = null) {
+    const insuranceToEdit = vehicleToEdit 
+      ? AppStore.state.data.Insurance.find(i => i.vehicle_id === vehicleToEdit.vehicle_id) 
+      : null;
+    openModal(AppComponents.renderVehicleFormModal(vehicleToEdit, insuranceToEdit));
+
+    const form = document.getElementById('form-vehicle-manage');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const vehData = {
+          vehicle_id: document.getElementById('veh-id').value.trim(),
+          model: document.getElementById('veh-model').value.trim(),
+          register_date: document.getElementById('veh-regdate').value,
+          current_mileage: Number(document.getElementById('veh-mileage').value) || 0,
+          status: document.getElementById('veh-status').value,
+          hipass_id: document.getElementById('veh-hipass-id').value.trim(),
+          hipass_card: document.getElementById('veh-hipass-card').value.trim()
+        };
+
+        const insData = {
+          company: document.getElementById('ins-company').value.trim(),
+          claim_phone: document.getElementById('ins-phone').value.trim(),
+          policy_number: document.getElementById('ins-policy').value.trim(),
+          insurance_end: document.getElementById('ins-end').value,
+          coverage: document.getElementById('ins-coverage').value.trim()
+        };
+
+        if (!vehData.vehicle_id || !vehData.model) {
+          showToast('차량 번호와 차종/모델을 입력해 주세요.', 'error');
+          return;
+        }
+
+        if (vehicleToEdit) {
+          await AppStore.updateVehicle(vehicleToEdit.vehicle_id, vehData, insData);
+          showToast(`✏️ 차량 [${vehData.vehicle_id}] 정보 및 하이패스/보험 연동이 수정되었습니다.`);
+        } else {
+          const res = await AppStore.createVehicle(vehData, insData);
+          if (!res.success) {
+            showToast(res.message, 'error');
+            return;
+          }
+          showToast(`🎉 신규 차량 [${vehData.vehicle_id}] (${vehData.model}) 및 하이패스/보험 연동 완료!`);
+        }
+
+        closeModal();
+      });
+    }
+  }
+
   function openRequestModal() {
     const activeVehId = AppStore.state.activeVehicleId;
     const user = AppStore.state.currentUser || { name: '김복지', team: '복지사업팀' };

@@ -14,8 +14,21 @@ const AppComponents = {
     ];
 
     const vehicleOptionsHTML = allVehicles.map(v => 
-      `<option value="${v.vehicle_id}" ${v.vehicle_id === vehicle.vehicle_id ? 'selected' : ''}>${v.vehicle_id} (${v.model})</option>`
-    ).join('');
+      `<option value="${v.vehicle_id}" ${v.vehicle_id === vehicle.vehicle_id ? 'selected' : ''}>🚘 ${v.vehicle_id} (${v.model})</option>`
+    ).join('') + `<option value="__ADD_NEW__">➕ 신규 차량 등록 (9월 3호차)</option>`;
+
+    // D-Day 계산
+    let ddayText = '';
+    if (vehicle.insurance_end) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const end = new Date(vehicle.insurance_end);
+      end.setHours(0,0,0,0);
+      const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+      if (diff > 0) ddayText = ` (D-${diff})`;
+      else if (diff === 0) ddayText = ' (D-Day)';
+      else ddayText = ` (만료 D+${Math.abs(diff)})`;
+    }
 
     return `
       <div class="vehicle-card glass-panel">
@@ -23,7 +36,7 @@ const AppComponents = {
           <div>
             <div class="vehicle-name-title gold-gradient-text">${vehicle.model}</div>
             <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
-              <select id="vehicle-select-dropdown" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-weight:600;">
+              <select id="vehicle-select-dropdown" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-glass); color:var(--accent-gold); padding:2px 6px; border-radius:4px; font-weight:700; cursor:pointer;">
                 ${vehicleOptionsHTML}
               </select>
             </div>
@@ -46,10 +59,10 @@ const AppComponents = {
           </div>
           <div class="stat-pill">
             <div class="label">하이패스 단말기</div>
-            <div class="value" style="font-size:0.75rem; color:var(--text-main);">${vehicle.hipass_id || '등록완료'}</div>
+            <div class="value" style="font-size:0.75rem; color:#3498db; font-weight:700;">${vehicle.hipass_id || 'HP-8849201'}</div>
           </div>
           <div class="stat-pill">
-            <div class="label">보험 만료일</div>
+            <div class="label">보험 만료일${ddayText}</div>
             <div class="value" style="font-size:0.75rem; color:var(--status-emerald);">${vehicle.insurance_end}</div>
           </div>
         </div>
@@ -488,6 +501,199 @@ const AppComponents = {
               📄 구글 문서 양식 열기
             </a>
           </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * 8. 차량, 하이패스, 보험 통합 등록/수정 모달 (9월 3호차 대비)
+   */
+  renderVehicleFormModal(vehicleToEdit = null, insuranceToEdit = null) {
+    const isEdit = !!vehicleToEdit;
+    const v = vehicleToEdit || {
+      vehicle_id: '',
+      model: '',
+      register_date: new Date().toISOString().split('T')[0],
+      current_mileage: 0,
+      hipass_id: 'HP-770011',
+      hipass_card: '9410-****-7700',
+      status: '운행가능',
+      note: ''
+    };
+    const ins = insuranceToEdit || {
+      company: 'KB손해보험',
+      policy_number: 'POL-2026-9900',
+      contractor: '강동어울림복지관',
+      claim_phone: '1544-0114',
+      insurance_start: new Date().toISOString().split('T')[0],
+      insurance_end: '2027-09-01',
+      coverage: '대인 무제한 / 대물 5억 / 자차 포함'
+    };
+
+    return `
+      <div class="modal-card" style="max-width:560px;">
+        <div class="modal-header">
+          <h3>${isEdit ? '✏️ 차량 & 하이패스/보험 정보 수정' : '🚗 신규 차량 & 하이패스/보험 등록 (9월 3호차)'}</h3>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <form id="form-vehicle-manage">
+          <div style="background:rgba(229,169,60,0.08); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass-strong); margin-bottom:12px;">
+            <h4 style="font-size:0.85rem; color:var(--accent-gold); margin-bottom:8px;">🚗 1. 차량 기본 정보</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>차량 번호 *</label>
+                <input type="text" id="veh-id" value="${v.vehicle_id}" placeholder="예: 77어9999" ${isEdit ? 'readonly style="opacity:0.7;"' : 'required'}>
+              </div>
+              <div class="form-group">
+                <label>차종 및 모델 *</label>
+                <input type="text" id="veh-model" value="${v.model}" placeholder="예: 현대 쏠라티 (15인승 대형승합)" required>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>최초 등록일</label>
+                <input type="date" id="veh-regdate" value="${v.register_date || ''}">
+              </div>
+              <div class="form-group">
+                <label>누적주행거리 (km) *</label>
+                <input type="number" id="veh-mileage" value="${v.current_mileage || 0}" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>운행 상태 *</label>
+              <select id="veh-status">
+                <option value="운행가능" ${v.status === '운행가능' ? 'selected' : ''}>운행가능 (정상)</option>
+                <option value="정비중" ${v.status === '정비중' ? 'selected' : ''}>정비중 (입고)</option>
+                <option value="사고처리중" ${v.status === '사고처리중' ? 'selected' : ''}>사고처리중 (수리)</option>
+                <option value="폐차" ${v.status === '폐차' ? 'selected' : ''}>폐차/매각</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background:rgba(52,152,219,0.08); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass); margin-bottom:12px;">
+            <h4 style="font-size:0.85rem; color:#3498db; margin-bottom:8px;">💳 2. 하이패스 단말기 및 카드 연동</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>하이패스 단말기 ID *</label>
+                <input type="text" id="veh-hipass-id" value="${v.hipass_id || ''}" placeholder="예: HP-770011" required>
+              </div>
+              <div class="form-group">
+                <label>하이패스 카드 번호</label>
+                <input type="text" id="veh-hipass-card" value="${v.hipass_card || ''}" placeholder="예: 9410-****-7700">
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(46,204,113,0.08); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass); margin-bottom:14px;">
+            <h4 style="font-size:0.85rem; color:#2ecc71; margin-bottom:8px;">🛡️ 3. 차량 전용 보험 연동 정보</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>보험회사명 *</label>
+                <input type="text" id="ins-company" value="${ins.company || ''}" placeholder="예: KB손해보험 / DB손해보험" required>
+              </div>
+              <div class="form-group">
+                <label>24시 사고/긴급출동 전화 *</label>
+                <input type="text" id="ins-phone" value="${ins.claim_phone || '1544-0114'}" placeholder="예: 1544-0114" required>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>보험 증권번호</label>
+                <input type="text" id="ins-policy" value="${ins.policy_number || ''}" placeholder="예: POL-2026-9900">
+              </div>
+              <div class="form-group">
+                <label>보험 만료일 *</label>
+                <input type="date" id="ins-end" value="${ins.insurance_end || ''}" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>보장 내용 요약</label>
+              <input type="text" id="ins-coverage" value="${ins.coverage || '대인 무제한 / 대물 5억 / 자차 포함'}" placeholder="보장 항목 요약">
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn-secondary modal-close-btn" style="width:auto;">취소</button>
+            <button type="submit" class="btn-primary" style="width:auto;">${isEdit ? '수정 저장' : '신규 차량 등록 완료'}</button>
+          </div>
+        </form>
+      </div>
+    `;
+  },
+
+  /**
+   * 9. 복지관 차량/하이패스/보험 통합 관리자 패널
+   */
+  renderVehicleManagementPanel(vehicles, insurances) {
+    const calculateDDay = (targetDateStr) => {
+      if (!targetDateStr) return '';
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const target = new Date(targetDateStr);
+      target.setHours(0,0,0,0);
+      const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+      if (diff > 0) return `D-${diff}일`;
+      if (diff === 0) return 'D-Day';
+      return `만료 D+${Math.abs(diff)}일`;
+    };
+
+    return `
+      <div class="glass-panel" style="padding:16px; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;">
+            <span>🚗</span> 복지관 차량 / 하이패스 / 보험 통합 관리자
+          </h3>
+          <button id="btn-open-add-vehicle-modal" class="btn-primary" style="padding:6px 12px; font-size:0.8rem; width:auto;">
+            + 신규 차량 등록 (9월 3호차)
+          </button>
+        </div>
+
+        <div class="custom-table-container">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>차량번호 / 모델</th>
+                <th>주행거리</th>
+                <th>하이패스 ID</th>
+                <th>연동 보험사 / 긴급전화</th>
+                <th>보험 만료일 (D-Day)</th>
+                <th>상태</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${vehicles.map(v => {
+                const ins = insurances.find(i => i.vehicle_id === v.vehicle_id) || {};
+                const dday = calculateDDay(ins.insurance_end || v.insurance_end);
+                return `
+                  <tr>
+                    <td>
+                      <strong class="gold-gradient-text nobr">${v.vehicle_id}</strong>
+                      <div style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${v.model}</div>
+                    </td>
+                    <td><strong class="nobr">${Number(v.current_mileage).toLocaleString()} km</strong></td>
+                    <td><span class="nobr" style="color:#3498db; font-weight:700;">${v.hipass_id || '미등록'}</span></td>
+                    <td>
+                      <div class="nobr" style="font-weight:600;">${ins.company || 'DB손해보험'}</div>
+                      <div class="nobr" style="font-size:0.75rem; color:var(--accent-gold);">📞 ${ins.claim_phone || '1588-0100'}</div>
+                    </td>
+                    <td>
+                      <strong class="nobr" style="color:var(--status-emerald);">${ins.insurance_end || v.insurance_end || '2027-12-31'}</strong>
+                      <span class="badge nobr" style="margin-left:4px; font-size:0.7rem; background:rgba(46,204,113,0.15); color:#2ecc71;">${dday}</span>
+                    </td>
+                    <td><span class="badge nobr" style="background:rgba(229,169,60,0.15); color:var(--accent-gold);">${v.status}</span></td>
+                    <td>
+                      <div style="display:flex; gap:4px;" class="nobr">
+                        <button class="btn-edit-vehicle btn-secondary" data-id="${v.vehicle_id}" style="padding:2px 6px; font-size:0.7rem; width:auto;">수정</button>
+                        <button class="btn-delete-vehicle btn-secondary" data-id="${v.vehicle_id}" style="padding:2px 6px; font-size:0.7rem; width:auto; color:var(--status-rose);">삭제</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
         </div>
       </div>
     `;
