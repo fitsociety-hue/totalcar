@@ -169,6 +169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="margin-top:16px;">
           ${renderMaintenanceAndAccidentsTab(data, activeVehicleId)}
         </div>
+
+        ${AppComponents.renderGoogleWorkspacePanel()}
       `;
 
       // 데스크톱 상단 버튼 이벤트 바인딩
@@ -176,6 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btnDeskReq) btnDeskReq.addEventListener('click', openRequestModal);
       const btnDeskRep = document.getElementById('btn-desktop-report');
       if (btnDeskRep) btnDeskRep.addEventListener('click', openMonthlyReportModal);
+      bindTabButtons();
     }
   }
 
@@ -275,6 +278,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         <button id="btn-open-monthly-report" class="btn-primary" style="margin-top:10px;">
           📋 월별 운행일지 결재 보고서 조회 및 인쇄 (PDF)
         </button>
+
+        ${AppComponents.renderGoogleWorkspacePanel()}
       </div>
     `;
   }
@@ -297,6 +302,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnRep = document.getElementById('btn-open-monthly-report');
     if (btnRep) btnRep.addEventListener('click', openMonthlyReportModal);
+
+    // 구글 워크스페이스 메일 / 챗 테스트 버튼 핸들러
+    const btnGmail = document.getElementById('btn-gsuite-gmail-test');
+    if (btnGmail) {
+      btnGmail.addEventListener('click', async () => {
+        const user = AppStore.state.currentUser || { name: '김복지', email: 'kim@gde.or.kr' };
+        await AppAPI.request('sendEmailNotification', {
+          email: user.email,
+          subject: '[강동어울림복지관] 구글 워크스페이스 알림 테스트',
+          body: `안녕하세요 ${user.name} 님, 스마트 차량통합관리 구글 메일 알림 연동 테스트입니다.`
+        });
+        showToast(`📧 [Gmail] ${user.name} (${user.email}) 님 계정으로 알림 메일이 발송되었습니다.`);
+      });
+    }
+
+    const btnChat = document.getElementById('btn-gsuite-chat-test');
+    if (btnChat) {
+      btnChat.addEventListener('click', async () => {
+        await AppAPI.request('sendGoogleChatNotification', {
+          text: `💬 [강동어울림복지관 차량통합관리] 구글 챗 스페이스 알림 연동 완료!`
+        });
+        showToast(`💬 [Google Chat] 복지관 차량관리 구글 챗 스페이스 알림 전송 완료!`);
+      });
+    }
 
     // 승인 / 반려 버튼 핸들러
     document.querySelectorAll('.btn-approve-req').forEach(btn => {

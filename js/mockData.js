@@ -3,13 +3,13 @@
  * 11개 시트 구조 완벽 반영
  */
 const MOCK_DATA = {
-  // 1. Users (사용자 계정)
+  // 1. Users (사용자 계정 - 복지관 구글 메일 @gde.or.kr 표준)
   Users: [
-    { user_id: '1001', name: '김복지', team: '복지사업팀', position: '팀원', password_hash: '1234', phone: '010-1234-5678', email: 'kim@gangdong.or.kr', status: '재직', created_at: '2026-01-10' },
-    { user_id: '1002', name: '이팀장', team: '복지사업팀', position: '팀장', password_hash: '1234', phone: '010-2345-6789', email: 'lee@gangdong.or.kr', status: '재직', created_at: '2026-01-10' },
-    { user_id: '1003', name: '박차량', team: '운영지원팀', position: '차량관리담당자', password_hash: '1234', phone: '010-3456-7890', email: 'park@gangdong.or.kr', status: '재직', created_at: '2026-01-10' },
-    { user_id: '1004', name: '최국장', team: '사무국', position: '사무국장', password_hash: '1234', phone: '010-4567-8901', email: 'choi@gangdong.or.kr', status: '재직', created_at: '2026-01-10' },
-    { user_id: '1005', name: '정관장', team: '관장실', position: '관장', password_hash: '1234', phone: '010-5678-9012', email: 'jung@gangdong.or.kr', status: '재직', created_at: '2026-01-10' }
+    { user_id: '1001', name: '김복지', team: '복지사업팀', position: '팀원', password_hash: '1234', phone: '010-1234-5678', email: 'kim@gde.or.kr', status: '재직', created_at: '2026-01-10' },
+    { user_id: '1002', name: '이팀장', team: '복지사업팀', position: '팀장', password_hash: '1234', phone: '010-2345-6789', email: 'lee@gde.or.kr', status: '재직', created_at: '2026-01-10' },
+    { user_id: '1003', name: '박차량', team: '운영지원팀', position: '차량관리담당자', password_hash: '1234', phone: '010-3456-7890', email: 'park@gde.or.kr', status: '재직', created_at: '2026-01-10' },
+    { user_id: '1004', name: '최국장', team: '사무국', position: '사무국장', password_hash: '1234', phone: '010-4567-8901', email: 'choi@gde.or.kr', status: '재직', created_at: '2026-01-10' },
+    { user_id: '1005', name: '정관장', team: '관장실', position: '관장', password_hash: '1234', phone: '010-5678-9012', email: 'jung@gde.or.kr', status: '재직', created_at: '2026-01-10' }
   ],
 
   // 2. Vehicles (차량 등록 정보 - 2대 운영 및 확장 대비)

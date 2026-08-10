@@ -320,8 +320,8 @@ const AppComponents = {
 
         <form id="auth-login-form">
           <div class="form-group">
-            <label>아이디 또는 이메일 *</label>
-            <input type="text" name="identity" class="form-control" placeholder="아이디/이메일 또는 성명 (예: kim@gangdong.or.kr)" required value="kim@gangdong.or.kr">
+            <label>복지관 구글 메일 계정 (@gde.or.kr) 또는 아이디 *</label>
+            <input type="text" name="identity" class="form-control" placeholder="구글 메일 주소 (예: kim@gde.or.kr)" required value="kim@gde.or.kr">
           </div>
 
           <div class="form-group">
@@ -390,8 +390,8 @@ const AppComponents = {
           </div>
 
           <div class="form-group">
-            <label>아이디 / 이메일 *</label>
-            <input type="email" name="email" class="form-control" placeholder="이메일 주소 (예: hong@gangdong.or.kr)" required>
+            <label>복지관 구글 메일 계정 (@gde.or.kr) *</label>
+            <input type="email" name="email" class="form-control" placeholder="복지관 구글 메일 계정으로 가입 (예: kim@gde.or.kr)" required>
           </div>
 
           <div class="form-group">
@@ -414,6 +414,81 @@ const AppComponents = {
             <button type="submit" class="btn-primary" style="flex:2;">회원가입 완료</button>
           </div>
         </form>
+      </div>
+    `;
+  },
+
+  /**
+   * 8. 구글 워크스페이스 (Google Workspace) 통합 패널 HTML 렌더러
+   */
+  renderGoogleWorkspacePanel() {
+    return `
+      <div class="glass-panel" style="padding:16px; margin-top:16px; border:1px solid var(--border-glass-strong); background:rgba(24,28,38,0.85);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1rem; font-weight:700; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
+            <span>🌐</span> 복지관 구글 워크스페이스 (Google Workspace) 스마트 연동
+          </h3>
+          <span class="badge" style="background:rgba(229,169,60,0.15); color:var(--accent-gold); border:1px solid var(--border-glass-strong);">
+            @gde.or.kr 연동 완료
+          </span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+          <!-- 1. Gmail 이메일 알림 -->
+          <div style="background:rgba(15,18,26,0.6); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+              <span>📧</span> 구글 메일 (Gmail)
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 8px 0;">운행 신청/승인/사고 알림</div>
+            <button id="btn-gsuite-gmail-test" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; width:100%;">
+              📲 테스트 메일 발송
+            </button>
+          </div>
+
+          <!-- 2. 구글 챗 (Google Chat) -->
+          <div style="background:rgba(15,18,26,0.6); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+              <span>💬</span> 구글 챗 (Google Chat)
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 8px 0;">차량 스페이스 알림 메시지</div>
+            <button id="btn-gsuite-chat-test" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; width:100%;">
+              💬 챗 알림 전송 테스트
+            </button>
+          </div>
+
+          <!-- 3. 공유 구글 드라이브 (Shared Drive) -->
+          <div style="background:rgba(15,18,26,0.6); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+              <span>📂</span> 공유 구글 드라이브
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 8px 0;">차량 서류/영수증 저장소</div>
+            <a href="${APP_CONFIG.GOOGLE_WORKSPACE.SHARED_DRIVE_URL}" target="_blank" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; width:100%; text-align:center; display:block; text-decoration:none;">
+              📂 공유 드라이브 열기
+            </a>
+          </div>
+
+          <!-- 4. 구글 스프레드시트 (Google Sheets) -->
+          <div style="background:rgba(15,18,26,0.6); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+              <span>📊</span> 구글 스프레드시트
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 8px 0;">11개 시트 원본 DB 연동</div>
+            <a href="${APP_CONFIG.GOOGLE_WORKSPACE.SPREADSHEET_URL}" target="_blank" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; width:100%; text-align:center; display:block; text-decoration:none;">
+              📊 DB 스프레드시트 열기
+            </a>
+          </div>
+
+          <!-- 5. 구글 문서 (Google Docs) -->
+          <div style="background:rgba(15,18,26,0.6); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+              <span>📄</span> 구글 문서 (Google Docs)
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 8px 0;">월별보고서/사고경위서 양식</div>
+            <a href="${APP_CONFIG.GOOGLE_WORKSPACE.DOCS_TEMPLATE_URL}" target="_blank" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem; width:100%; text-align:center; display:block; text-decoration:none;">
+              📄 구글 문서 양식 열기
+            </a>
+          </div>
+        </div>
       </div>
     `;
   }

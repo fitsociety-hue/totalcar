@@ -150,6 +150,16 @@ const AppAPI = {
         return newUser;
       }
 
+      case 'sendEmailNotification': {
+        console.log('📧 [Gmail Simulation] Sent email to:', payload.email, payload.subject);
+        return { sent: true, recipient: payload.email };
+      }
+
+      case 'sendGoogleChatNotification': {
+        console.log('💬 [Google Chat Simulation] Sent message:', payload.text);
+        return { sent: true };
+      }
+
       case 'updateVehicleStatus': {
         const vehicle = db.Vehicles.find(v => v.vehicle_id === payload.vehicle_id);
         if (vehicle) {

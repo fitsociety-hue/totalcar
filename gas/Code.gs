@@ -52,6 +52,14 @@ function doPost(e) {
         resultData = addUserAccount(ss, contents);
         break;
 
+      case 'sendEmailNotification':
+        resultData = sendEmailNotification(contents);
+        break;
+
+      case 'sendGoogleChatNotification':
+        resultData = sendGoogleChatNotification(contents);
+        break;
+
       default:
         throw new Error('알 수 없는 Action 요청입니다: ' + action);
     }
@@ -292,4 +300,44 @@ function addUserAccount(ss, data) {
   ]);
 
   return { user_id: userId };
+}
+
+/**
+ * Gmail (구글 이메일) 자동 알림 발송
+ */
+function sendEmailNotification(data) {
+  if (!data.email) return { sent: false, message: '이메일 주소가 없습니다.' };
+  
+  try {
+    GmailApp.sendEmail(
+      data.email,
+      data.subject || '[강동어울림복지관 차량통합관리] 구글 메일 알림',
+      data.body || '강동어울림복지관 스마트 차량통합관리 시스템 알림입니다.'
+    );
+    return { sent: true, recipient: data.email };
+  } catch (err) {
+    Logger.log('Gmail Send Error: ' + err.toString());
+    return { sent: false, error: err.toString() };
+  }
+}
+
+/**
+ * Google Chat (구글 챗) 스페이스 메시지 발송
+ */
+function sendGoogleChatNotification(data) {
+  var webhookUrl = data.webhookUrl || 'https://chat.googleapis.com/v1/spaces/AAQA_totalcar_alerts/messages';
+  var payload = JSON.stringify({ text: data.text || '🚗 [강동어울림복지관 차량통합관리] 구글 챗 알림 메시지입니다.' });
+  
+  try {
+    UrlFetchApp.fetch(webhookUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    });
+    return { sent: true };
+  } catch (err) {
+    Logger.log('Google Chat Error: ' + err.toString());
+    return { sent: false, error: err.toString() };
+  }
 }

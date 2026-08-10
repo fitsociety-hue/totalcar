@@ -16,6 +16,15 @@ const APP_CONFIG = {
   SESSION_TIMEOUT: 24 * 60 * 60 * 1000,
   SESSION_USER_KEY: 'TOTALCAR_LOGGED_IN_USER',
 
+  // 구글 워크스페이스 (Google Workspace) 통합 링크 및 설정
+  GOOGLE_WORKSPACE: {
+    DOMAIN: '@gde.or.kr',
+    SHARED_DRIVE_URL: 'https://drive.google.com/drive/folders/1gangdong_totalcar_shared_drive',
+    SPREADSHEET_URL: 'https://docs.google.com/spreadsheets/d/1gangdong_totalcar_db_sheets/edit',
+    DOCS_TEMPLATE_URL: 'https://docs.google.com/document/d/1gangdong_totalcar_monthly_report_doc/edit',
+    CHAT_WEBHOOK_URL: 'https://chat.googleapis.com/v1/spaces/AAQA_totalcar_alerts/messages'
+  },
+
   // 차량 상태 정의
   VEHICLE_STATUS: {
     AVAILABLE: { code: '운행가능', label: '운행 가능', color: '#10B981', badgeBg: 'rgba(16, 185, 129, 0.15)' },
