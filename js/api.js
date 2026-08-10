@@ -140,6 +140,16 @@ const AppAPI = {
         return newAcc;
       }
 
+      case 'createUserAccount': {
+        const newUser = {
+          user_id: payload.user_id || `USER-${Date.now()}`,
+          ...payload
+        };
+        db.Users.push(newUser);
+        this.saveStorage(db);
+        return newUser;
+      }
+
       case 'updateVehicleStatus': {
         const vehicle = db.Vehicles.find(v => v.vehicle_id === payload.vehicle_id);
         if (vehicle) {

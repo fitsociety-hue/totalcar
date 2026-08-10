@@ -43,6 +43,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // 상단바 로그인/회원가입/로그아웃 버튼 핸들러
+  const btnHeaderLogin = document.getElementById('btn-header-login');
+  if (btnHeaderLogin) btnHeaderLogin.addEventListener('click', openLoginModal);
+
+  const btnHeaderSignup = document.getElementById('btn-header-signup');
+  if (btnHeaderSignup) btnHeaderSignup.addEventListener('click', openSignupModal);
+
+  const btnHeaderLogout = document.getElementById('btn-header-logout');
+  if (btnHeaderLogout) btnHeaderLogout.addEventListener('click', () => {
+    AppStore.logout();
+    showToast('성공적으로 로그아웃 되었습니다.');
+  });
+
+  const btnMobileLogin = document.getElementById('btn-mobile-login');
+  if (btnMobileLogin) btnMobileLogin.addEventListener('click', openLoginModal);
+
   // 4.2 모바일 하단 탭바 전환
   tabItems.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -67,6 +83,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { currentUser, activeVehicleId, activeTab, data } = state;
     const activeVehicle = AppStore.getActiveVehicle();
     const insurance = data.Insurance.find(i => i.vehicle_id === activeVehicleId);
+
+    // 상단바 및 모바일 헤더 사용자 세션 정보 반영
+    const headerUserName = document.getElementById('header-user-name');
+    const headerUserRole = document.getElementById('header-user-role');
+    const btnLogin = document.getElementById('btn-header-login');
+    const btnSignup = document.getElementById('btn-header-signup');
+    const btnLogout = document.getElementById('btn-header-logout');
+
+    if (currentUser) {
+      if (headerUserName) headerUserName.textContent = currentUser.name;
+      if (headerUserRole) headerUserRole.textContent = currentUser.position;
+      if (btnLogin) btnLogin.style.display = 'none';
+      if (btnSignup) btnSignup.style.display = 'none';
+      if (btnLogout) btnLogout.style.display = 'inline-flex';
+    } else {
+      if (headerUserName) headerUserName.textContent = '손님';
+      if (headerUserRole) headerUserRole.textContent = '비로그인';
+      if (btnLogin) btnLogin.style.display = 'inline-flex';
+      if (btnSignup) btnSignup.style.display = 'inline-flex';
+      if (btnLogout) btnLogout.style.display = 'none';
+    }
 
     // [A] 모바일 뷰 렌더링 (탭별 분기)
     if (mobileContent) {
@@ -150,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `
       <div class="glass-panel" style="padding:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:1rem; font-weight:700;">📑 차량운행일지 목록</h3>
+          <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;"><span>📑</span> 차량운행일지 목록</h3>
           <button id="btn-open-drivelog-modal" class="btn-primary" style="padding:6px 12px; font-size:0.8rem; width:auto;">+ 운행일지 작성</button>
         </div>
 
@@ -158,19 +195,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           <table class="custom-table">
             <thead>
               <tr>
-                <th>운행일자</th>
-                <th>운전자</th>
-                <th>목적지</th>
-                <th>주행거리</th>
+                <th style="width:25%;">운행일자</th>
+                <th style="width:25%;">운전자</th>
+                <th style="width:30%;">목적지</th>
+                <th style="width:20%;">주행거리</th>
               </tr>
             </thead>
             <tbody>
               ${vehLogs.map(l => `
                 <tr>
-                  <td><strong>${l.date}</strong></td>
-                  <td>${l.driver_name || '김복지'}</td>
-                  <td>${l.destination}</td>
-                  <td><strong style="color:var(--accent-gold);">${l.distance_km} km</strong></td>
+                  <td><strong class="nobr">${l.date}</strong></td>
+                  <td><span class="nobr">${l.driver_name || '김복지'}</span></td>
+                  <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${l.destination}">${l.destination}</td>
+                  <td><strong style="color:var(--accent-gold);" class="nobr">${l.distance_km} km</strong></td>
                 </tr>
               `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:20px;">작성된 운행일지가 없습니다.</td></tr>'}
             </tbody>
@@ -188,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `
       <div class="glass-panel" style="padding:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:1rem; font-weight:700;">🛠️ 차계부 및 정비/사고 이력</h3>
+          <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;"><span>🛠️</span> 차계부 및 정비/사고 이력</h3>
           <div style="display:flex; gap:6px;">
             <button id="btn-open-accident-modal" class="btn-secondary btn-emergency" style="padding:4px 10px; font-size:0.75rem; width:auto;">🚨 사고 경위서 작성 (v1.1)</button>
             <button id="btn-open-fuel-modal" class="btn-primary" style="padding:4px 10px; font-size:0.75rem; width:auto;">+ 주유 입력</button>
@@ -198,11 +235,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
           <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
             <div style="font-size:0.75rem; color:var(--text-muted);">최근 주유 기록 (${fuelLogs.length}건)</div>
-            ${fuelLogs.length > 0 ? `<div style="font-size:0.95rem; font-weight:700; color:var(--accent-gold); margin-top:4px;">${fuelLogs[0].station} - ${fuelLogs[0].amount_won.toLocaleString()}원</div>` : '<div style="font-size:0.8rem; color:var(--text-dim);">기록 없음</div>'}
+            ${fuelLogs.length > 0 ? `<div style="font-size:0.95rem; font-weight:700; color:var(--accent-gold); margin-top:4px;" class="nobr">${fuelLogs[0].station} - ${fuelLogs[0].amount_won.toLocaleString()}원</div>` : '<div style="font-size:0.8rem; color:var(--text-dim);">기록 없음</div>'}
           </div>
           <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
             <div style="font-size:0.75rem; color:var(--text-muted);">등록된 사고 경위서 (v1.1)</div>
-            ${accLogs.length > 0 ? `<div style="font-size:0.9rem; font-weight:700; color:var(--status-rose); margin-top:4px;">${accLogs[0].accident_role}사고 (${accLogs[0].date})</div>` : '<div style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">무사고 차량</div>'}
+            ${accLogs.length > 0 ? `<div style="font-size:0.9rem; font-weight:700; color:var(--status-rose); margin-top:4px;" class="nobr">${accLogs[0].accident_role}사고 (${accLogs[0].date})</div>` : '<div style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">무사고 차량</div>'}
           </div>
         </div>
       </div>
@@ -215,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     return `
       <div class="glass-panel" style="padding:16px;">
-        <h3 style="font-size:1rem; font-weight:700; margin-bottom:12px;">⚙️ 결재 및 시스템 통합 관리자</h3>
+        <h3 style="font-size:1rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:6px;"><span>⚙️</span> 결재 및 시스템 통합 관리자</h3>
 
         ${isApprover ? `
           <div style="margin-bottom:16px; background:rgba(229,169,60,0.1); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass-strong);">
@@ -223,8 +260,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${pendingReqs.map(req => `
               <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:var(--radius-sm); margin-bottom:6px;">
                 <div>
-                  <div style="font-weight:700; font-size:0.85rem;">${req.applicant_name} (${req.team})</div>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">${req.vehicle_id} | ${req.drive_date} (${req.start_time}~${req.end_time})</div>
+                  <div style="font-weight:700; font-size:0.85rem;" class="nobr">${req.applicant_name} (${req.team})</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${req.vehicle_id} | ${req.drive_date} (${req.start_time}~${req.end_time})</div>
                 </div>
                 <div style="display:flex; gap:6px;">
                   <button class="btn-approve-req btn-primary" data-id="${req.request_id}" style="padding:4px 8px; font-size:0.75rem; width:auto;">승인</button>
@@ -563,6 +600,95 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
     openModal();
+  }
+
+  function openLoginModal() {
+    modalOverlay.innerHTML = AppComponents.renderLoginModal();
+    openModal();
+
+    const form = document.getElementById('auth-login-form');
+    const errorMsg = document.getElementById('login-error-msg');
+    const btnSwitchSignup = document.getElementById('btn-switch-to-signup');
+
+    if (btnSwitchSignup) {
+      btnSwitchSignup.addEventListener('click', openSignupModal);
+    }
+
+    // 퀵 데모 로그인 리스너
+    document.querySelectorAll('.btn-quick-demo-login').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const position = btn.dataset.role;
+        AppStore.setCurrentUserByRole(position);
+        closeModal();
+        showToast(`[${position}] 계정으로 1초 빠른 로그인 되었습니다.`);
+      });
+    });
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const identity = formData.get('identity');
+        const password = formData.get('password');
+
+        const res = AppStore.login(identity, password);
+        if (!res.success) {
+          errorMsg.textContent = `⚠️ ${res.message}`;
+          errorMsg.style.display = 'block';
+          return;
+        }
+
+        closeModal();
+        showToast(`환영합니다! ${res.user.name} (${res.user.position}) 님 로그인 완료.`);
+      });
+    }
+  }
+
+  function openSignupModal() {
+    modalOverlay.innerHTML = AppComponents.renderSignupModal();
+    openModal();
+
+    const form = document.getElementById('auth-signup-form');
+    const errorMsg = document.getElementById('signup-error-msg');
+    const btnSwitchLogin = document.getElementById('btn-switch-to-login');
+
+    if (btnSwitchLogin) {
+      btnSwitchLogin.addEventListener('click', openLoginModal);
+    }
+
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const password = formData.get('password');
+        const password_confirm = formData.get('password_confirm');
+
+        if (password !== password_confirm) {
+          errorMsg.textContent = '⚠️ 비밀번호와 비밀번호 확인이 일치하지 않습니다.';
+          errorMsg.style.display = 'block';
+          return;
+        }
+
+        const userData = {
+          name: formData.get('name'),
+          team: formData.get('team'),
+          position: formData.get('position'),
+          email: formData.get('email'),
+          phone: formData.get('phone'),
+          password
+        };
+
+        const res = await AppStore.signup(userData);
+        if (!res.success) {
+          errorMsg.textContent = `⚠️ ${res.message}`;
+          errorMsg.style.display = 'block';
+          return;
+        }
+
+        closeModal();
+        showToast(`🎉 회원가입 성공! ${res.user.name} 님으로 로그인되었습니다.`);
+      });
+    }
   }
 
   function openModal() {

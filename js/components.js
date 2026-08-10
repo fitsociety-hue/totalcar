@@ -114,11 +114,11 @@ const AppComponents = {
                           req.approval_status === '반려' ? 'var(--status-rose)' : 'var(--status-amber)';
       return `
         <tr>
-          <td><strong>${req.drive_date}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${req.start_time}~${req.end_time}</span></td>
-          <td>${req.applicant_name} (${req.team})</td>
-          <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${req.purpose}</td>
+          <td><span class="nobr"><strong>${req.drive_date}</strong></span><br><span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${req.start_time}~${req.end_time}</span></td>
+          <td><span class="nobr">${req.applicant_name} <small style="color:var(--text-muted);">(${req.team})</small></span></td>
+          <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
           <td>
-            <span class="badge" style="background:${statusColor}20; color:${statusColor}; border:1px solid ${statusColor}40;">
+            <span class="badge nobr" style="background:${statusColor}20; color:${statusColor}; border:1px solid ${statusColor}40;">
               ${req.approval_status}
             </span>
           </td>
@@ -129,7 +129,7 @@ const AppComponents = {
     return `
       <div class="glass-panel" style="padding:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:1rem; font-weight:700;">📅 차량 운행 예약 현황</h3>
+          <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;"><span>📅</span> 차량 운행 예약 현황</h3>
           <button id="btn-open-request-modal" class="btn-primary" style="padding:6px 12px; font-size:0.8rem; width:auto;">+ 운행 신청</button>
         </div>
 
@@ -137,10 +137,10 @@ const AppComponents = {
           <table class="custom-table">
             <thead>
               <tr>
-                <th>예정일시</th>
-                <th>신청자</th>
-                <th>운행목적</th>
-                <th>상태</th>
+                <th style="width:28%;">예정일시</th>
+                <th style="width:28%;">신청자</th>
+                <th style="width:28%;">운행목적</th>
+                <th style="width:16%;">상태</th>
               </tr>
             </thead>
             <tbody>
@@ -285,13 +285,13 @@ const AppComponents = {
           <tbody>
             ${logs.map(l => `
               <tr>
-                <td style="border:1px solid #000; padding:5px;">${l.date}</td>
-                <td style="border:1px solid #000; padding:5px;">${l.driver_name || '김복지'}</td>
+                <td style="border:1px solid #000; padding:5px;"><span class="nobr">${l.date}</span></td>
+                <td style="border:1px solid #000; padding:5px;"><span class="nobr">${l.driver_name || '김복지'}</span></td>
                 <td style="border:1px solid #000; padding:5px;">${l.destination}</td>
                 <td style="border:1px solid #000; padding:5px;">${l.purpose}</td>
-                <td style="border:1px solid #000; padding:5px;">${l.start_km}</td>
-                <td style="border:1px solid #000; padding:5px;">${l.end_km}</td>
-                <td style="border:1px solid #000; padding:5px; font-weight:700;">${l.distance_km} km</td>
+                <td style="border:1px solid #000; padding:5px;"><span class="nobr">${l.start_km}</span></td>
+                <td style="border:1px solid #000; padding:5px;"><span class="nobr">${l.end_km}</span></td>
+                <td style="border:1px solid #000; padding:5px; font-weight:700;"><span class="nobr">${l.distance_km} km</span></td>
               </tr>
             `).join('')}
           </tbody>
@@ -301,6 +301,119 @@ const AppComponents = {
           위와 같이 강동어울림복지관 차량 운행 결과를 보고합니다.<br>
           작성일: ${new Date().toISOString().split('T')[0]}
         </div>
+      </div>
+    `;
+  },
+
+  /**
+   * 6. 로그인 모달 HTML 렌더러
+   */
+  renderLoginModal() {
+    return `
+      <div class="modal-body glass-panel" style="max-width:440px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
+          <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
+            <span>🔑</span> 스마트 차량통합관리 로그인
+          </h3>
+          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
+        </div>
+
+        <form id="auth-login-form">
+          <div class="form-group">
+            <label>아이디 또는 이메일 *</label>
+            <input type="text" name="identity" class="form-control" placeholder="아이디/이메일 또는 성명 (예: kim@gangdong.or.kr)" required value="kim@gangdong.or.kr">
+          </div>
+
+          <div class="form-group">
+            <label>비밀번호 *</label>
+            <input type="password" name="password" class="form-control" placeholder="비밀번호 (기본: 1234)" required value="1234">
+          </div>
+
+          <div id="login-error-msg" style="display:none; color:var(--status-rose); font-size:0.8rem; margin-bottom:12px; font-weight:600;"></div>
+
+          <button type="submit" class="btn-primary" style="margin-bottom:12px;">로그인</button>
+        </form>
+
+        <div style="text-align:center; border-top:1px dashed var(--border-glass); padding-top:14px; margin-top:8px;">
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">아직 계정이 없으신가요?</div>
+          <button id="btn-switch-to-signup" class="btn-secondary" style="padding:8px; font-size:0.85rem;">⚡ 신규 회원가입 신청</button>
+        </div>
+
+        <!-- 1초 빠른 데모 계정 선택 바 -->
+        <div style="margin-top:16px; background:rgba(229,169,60,0.08); border:1px solid var(--border-glass-strong); padding:12px; border-radius:var(--radius-sm);">
+          <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:700; margin-bottom:6px;">🚀 테스트용 1초 빠른 로그인 선택</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button class="btn-quick-demo-login btn-secondary" data-role="팀원" style="padding:4px 8px; font-size:0.72rem; width:auto;">김복지 (팀원)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="팀장" style="padding:4px 8px; font-size:0.72rem; width:auto;">이팀장 (팀장)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="차량관리담당자" style="padding:4px 8px; font-size:0.72rem; width:auto;">박차량 (담당자)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="사무국장" style="padding:4px 8px; font-size:0.72rem; width:auto;">최국장 (국장)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="관장" style="padding:4px 8px; font-size:0.72rem; width:auto;">정관장 (관장)</button>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * 7. 회원가입 모달 HTML 렌더러
+   */
+  renderSignupModal() {
+    return `
+      <div class="modal-body glass-panel" style="max-width:480px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
+          <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
+            <span>📝</span> 강동어울림복지관 직원 회원가입
+          </h3>
+          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
+        </div>
+
+        <form id="auth-signup-form">
+          <div class="form-group">
+            <label>성명 *</label>
+            <input type="text" name="name" class="form-control" placeholder="성함 입력 (예: 홍길동)" required>
+          </div>
+
+          <div class="form-group">
+            <label>소속 부서 / 팀명 *</label>
+            <input type="text" name="team" class="form-control" placeholder="예: 복지사업팀, 운영지원팀, 기획팀" value="복지사업팀" required>
+          </div>
+
+          <div class="form-group">
+            <label>직급 / 승인 권한 *</label>
+            <select name="position" class="form-control" required>
+              <option value="팀원" selected>직원 (팀원)</option>
+              <option value="팀장">직원 (팀장)</option>
+              <option value="차량관리담당자">차량 관리 담당자</option>
+              <option value="사무국장">사무국장 (중간결재)</option>
+              <option value="관장">관장 (최종결재)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>아이디 / 이메일 *</label>
+            <input type="email" name="email" class="form-control" placeholder="이메일 주소 (예: hong@gangdong.or.kr)" required>
+          </div>
+
+          <div class="form-group">
+            <label>연락처</label>
+            <input type="tel" name="phone" class="form-control" placeholder="010-0000-0000" value="010-1234-5678">
+          </div>
+
+          <div class="form-group">
+            <label>비밀번호 *</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="password" name="password" class="form-control" placeholder="비밀번호" required>
+              <input type="password" name="password_confirm" class="form-control" placeholder="비밀번호 확인" required>
+            </div>
+          </div>
+
+          <div id="signup-error-msg" style="display:none; color:var(--status-rose); font-size:0.8rem; margin-bottom:12px; font-weight:600;"></div>
+
+          <div style="display:flex; gap:8px; margin-top:16px;">
+            <button type="button" id="btn-switch-to-login" class="btn-secondary" style="flex:1;">로그인으로 돌아가기</button>
+            <button type="submit" class="btn-primary" style="flex:2;">회원가입 완료</button>
+          </div>
+        </form>
       </div>
     `;
   }

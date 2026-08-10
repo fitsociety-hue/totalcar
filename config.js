@@ -14,6 +14,7 @@ const APP_CONFIG = {
 
   // 기본 세션 유지 시간 (밀리초)
   SESSION_TIMEOUT: 24 * 60 * 60 * 1000,
+  SESSION_USER_KEY: 'TOTALCAR_LOGGED_IN_USER',
 
   // 차량 상태 정의
   VEHICLE_STATUS: {

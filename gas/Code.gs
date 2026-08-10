@@ -48,6 +48,10 @@ function doPost(e) {
         resultData = addAccidentLog(ss, contents);
         break;
 
+      case 'createUserAccount':
+        resultData = addUserAccount(ss, contents);
+        break;
+
       default:
         throw new Error('알 수 없는 Action 요청입니다: ' + action);
     }
@@ -265,4 +269,27 @@ function addAccidentLog(ss, data) {
   ]);
 
   return { accident_id: accId };
+}
+
+/**
+ * 신규 회원 계정 추가
+ */
+function addUserAccount(ss, data) {
+  var sheet = ss.getSheetByName('Users');
+  if (!sheet) sheet = ss.insertSheet('Users');
+
+  var userId = data.user_id || ('USER-' + Date.now());
+  sheet.appendRow([
+    userId,
+    data.name,
+    data.team,
+    data.position,
+    data.password_hash || '1234',
+    data.phone || '',
+    data.email,
+    '재직',
+    new Date().toISOString().split('T')[0]
+  ]);
+
+  return { user_id: userId };
 }

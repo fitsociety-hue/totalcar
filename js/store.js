@@ -43,9 +43,23 @@ const AppStore = {
     try {
       const fetched = await AppAPI.request('getInitialData');
       if (fetched) {
-        // 기본 사용자 세팅 (김복지 - 팀원)
-        const defaultUser = fetched.Users ? fetched.Users[0] : MOCK_DATA.Users[0];
+        const users = fetched.Users || MOCK_DATA.Users;
+        
+        // LocalStorage 저장된 세션 유저 복원
+        let restoredUser = null;
+        try {
+          const savedSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
+          if (savedSession) {
+            const parsed = JSON.parse(savedSession);
+            restoredUser = users.find(u => u.user_id === parsed.user_id || u.email === parsed.email) || parsed;
+          }
+        } catch (e) {
+          console.warn('Session parse error:', e);
+        }
+
+        const defaultUser = restoredUser || users[0];
         const defaultVeh = fetched.Vehicles ? fetched.Vehicles[0].vehicle_id : '236루5818';
+        
         this.setState({
           data: fetched,
           currentUser: defaultUser,
@@ -60,11 +74,98 @@ const AppStore = {
   },
 
   /**
-   * 역할/사용자 변경 (테스트용)
+   * 로그인 처리
+   */
+  login(identity, password) {
+    const users = this.state.data.Users || [];
+    const searchKey = identity.trim().toLowerCase();
+    
+    // 이메일, user_id, 성명으로 조회
+    const user = users.find(u => 
+      (u.email && u.email.toLowerCase() === searchKey) ||
+      (u.user_id && u.user_id.toLowerCase() === searchKey) ||
+      (u.name && u.name.toLowerCase() === searchKey)
+    );
+
+    if (!user) {
+      return { success: false, message: '존재하지 않는 사용자 계정 또는 이메일입니다.' };
+    }
+
+    // 비밀번호 검증 (기본 1234 또는 입력값 매칭)
+    if (user.password_hash && user.password_hash !== password && password !== '1234') {
+      return { success: false, message: '비밀번호가 일치하지 않습니다.' };
+    }
+
+    // 세션 저장 & 상태 반영
+    this.setState({ currentUser: user });
+    try {
+      localStorage.setItem(APP_CONFIG.SESSION_USER_KEY, JSON.stringify(user));
+    } catch (e) {
+      console.error('Failed to save auth session:', e);
+    }
+    return { success: true, user };
+  },
+
+  /**
+   * 회원가입 처리
+   */
+  async signup(userData) {
+    const users = [...(this.state.data.Users || [])];
+    
+    // 기존 중복 이메일/ID 체크
+    const existing = users.find(u => u.email === userData.email || u.user_id === userData.user_id);
+    if (existing) {
+      return { success: false, message: '이미 가입된 아이디/이메일입니다.' };
+    }
+
+    const newUserId = `USER_${Date.now()}`;
+    const newUser = {
+      user_id: newUserId,
+      name: userData.name,
+      team: userData.team || '복지사업팀',
+      position: userData.position || '팀원',
+      email: userData.email,
+      password_hash: userData.password,
+      phone: userData.phone || '010-0000-0000',
+      status: '재직',
+      created_at: new Date().toISOString().split('T')[0]
+    };
+
+    users.push(newUser);
+    const updatedData = { ...this.state.data, Users: users };
+    
+    // LocalStorage 및 상태 반영
+    AppAPI.saveStorage(updatedData);
+    this.setState({ data: updatedData, currentUser: newUser });
+    try {
+      localStorage.setItem(APP_CONFIG.SESSION_USER_KEY, JSON.stringify(newUser));
+    } catch (e) {}
+
+    return { success: true, user: newUser };
+  },
+
+  /**
+   * 로그아웃 처리
+   */
+  logout() {
+    try {
+      localStorage.removeItem(APP_CONFIG.SESSION_USER_KEY);
+    } catch (e) {}
+    
+    // 기본 첫 번째 사용자 계정으로 복귀 또는 null 세팅
+    const defaultUser = (this.state.data.Users && this.state.data.Users[0]) || null;
+    this.setState({ currentUser: defaultUser });
+  },
+
+  /**
+   * 역할/사용자 변경 (테스트 및 퀵 세션용)
    */
   setCurrentUserByRole(position) {
     const user = this.state.data.Users.find(u => u.position === position) || this.state.data.Users[0];
     this.setState({ currentUser: user });
+    try {
+      localStorage.setItem(APP_CONFIG.SESSION_USER_KEY, JSON.stringify(user));
+    } catch (e) {}
   },
 
   /**
