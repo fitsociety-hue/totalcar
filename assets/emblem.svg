@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Gold Metallic Gradients -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3C4" />
+      <stop offset="35%" stop-color="#E5A93C" />
+      <stop offset="70%" stop-color="#B87C1D" />
+      <stop offset="100%" stop-color="#F5C768" />
+    </linearGradient>
+    <radialGradient id="ringBg" cx="50%" cy="50%" r="50%">
+      <stop offset="70%" stop-color="#1A1D24" />
+      <stop offset="100%" stop-color="#111318" />
+    </radialGradient>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Ring with Metallic Border -->
+  <circle cx="100" cy="100" r="92" fill="url(#ringBg)" stroke="url(#goldGradient)" stroke-width="5" filter="url(#goldGlow)" />
+  <circle cx="100" cy="100" r="84" fill="none" stroke="rgba(229, 169, 60, 0.3)" stroke-width="1.5" stroke-dasharray="4,3" />
+
+  <!-- Inner Emblem Graphic: Stylized 'G' & Harmony Wings -->
+  <g transform="translate(100, 100) scale(0.9)">
+    <!-- Central Shield Wings -->
+    <path d="M 0,-62 C 30,-50 55,-25 55,10 C 55,45 25,65 0,72 C -25,65 -55,45 -55,10 C -55,-25 -30,-50 0,-62 Z" 
+          fill="none" stroke="url(#goldGradient)" stroke-width="4" stroke-linejoin="round" />
+    
+    <!-- Stylized Eoullim 'G' Core -->
+    <path d="M -22,-20 A 30 30 0 1 1 25 15 L 0 15 L 0 2 L 12 2 A 16 16 0 1 0 -12 -12 A 16 16 0 0 0 -12 12 C -5 12 5 8 8 2" 
+          fill="none" stroke="url(#goldGradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Center Emblem Diamond Accent -->
+    <polygon points="0,-42 8,-28 0,-14 -8,-28" fill="url(#goldGradient)" />
+
+    <!-- Top 3 Stars for Excellence -->
+    <g fill="url(#goldGradient)" transform="translate(0, -68)">
+      <polygon points="0,-6 2,-1 7,-1 3,2 5,7 0,4 -5,7 -3,2 -7,-1 -2,-1" />
+      <polygon points="-24,-2 -22,2 -17,2 -21,5 -19,10 -24,7 -29,10 -27,5 -31,2 -26,2" transform="scale(0.8)" />
+      <polygon points="24,-2 26,2 31,2 27,5 29,10 24,7 19,10 21,5 17,2 22,2" transform="scale(0.8)" />
+    </g>
+  </g>
+</svg>

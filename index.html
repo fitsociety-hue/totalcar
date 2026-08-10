@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>강동어울림복지관 차량통합관리 시스템</title>
+  <meta name="description" content="강동어울림복지관 스마트 차량통합관리 앱 - 차량등록, 운행신청, 운행일지, 정비, 사고관리 및 월별결재 시스템">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/emblem.svg">
+
+  <!-- Core Theme Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 권한 테스트 스위처 상단 바 (사용자 권한 테스트용) -->
+  <div id="role-test-bar">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="color:var(--accent-gold); font-weight:700;">강동어울림복지관</span>
+      <span style="color:var(--text-dim);">| 스마트 차량통합관리 v1.1</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label for="role-selector" style="color:var(--text-muted);">🔑 테스트 권한 선택:</label>
+      <select id="role-selector">
+        <option value="팀원">직원 (팀원)</option>
+        <option value="팀장">직원 (팀장)</option>
+        <option value="차량관리담당자" selected>차량관리 담당자</option>
+        <option value="사무국장">사무국장 (중간결재)</option>
+        <option value="관장">관장 (최종결재)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 메인 앱 컨테이너 (모바일 프레임 + PC 대시보드 워크스페이스) -->
+  <div id="app-container">
+    <div class="app-wrapper">
+
+      <!-- [1] 모바일 앱 프레임 시뮬레이터 (Mercedes Mobile App Benchmarked) -->
+      <div class="mobile-frame">
+        <!-- iPhone Status Bar & Notch -->
+        <div class="notch"></div>
+        <div class="mobile-status-bar">
+          <span>09:41</span>
+          <span>5G 📶 100% 🔋</span>
+        </div>
+
+        <!-- Mobile Header (Emblem & Institution Title) -->
+        <div class="mobile-header">
+          <div class="brand-title">
+            <img src="assets/emblem.svg" alt="Emblem" class="brand-emblem">
+            <span>강동어울림복지관</span>
+          </div>
+          <div class="header-actions">
+            <button class="header-btn" title="알림함">🔔</button>
+            <button class="header-btn" title="설정">⚙️</button>
+          </div>
+        </div>
+
+        <!-- Splash Screen Landing Animation -->
+        <div id="splash-screen">
+          <img src="assets/emblem.svg" alt="Emblem" class="splash-emblem">
+          <div style="margin-top:20px; font-size:1.1rem; font-weight:700;" class="gold-gradient-text">
+            강동어울림복지관
+          </div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+            스마트 차량통합관리 로딩 중...
+          </div>
+        </div>
+
+        <!-- Mobile Main Scrollable Content Area -->
+        <div id="mobile-content" class="mobile-content">
+          <!-- Dynamic Content rendered by app.js -->
+        </div>
+
+        <!-- Mobile Bottom Navigation Bar (Mercedes Mobile Style) -->
+        <nav class="mobile-tab-bar">
+          <div class="tab-item active" data-tab="home">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>홈</span>
+          </div>
+          <div class="tab-item" data-tab="schedule">
+            <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
+            <span>예약/신청</span>
+          </div>
+          <div class="tab-item" data-tab="drivelog">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            <span>운행일지</span>
+          </div>
+          <div class="tab-item" data-tab="maint">
+            <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.6C.4 7 1 10 3 12c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.4-.4.4-1.1 0-1.4z"/></svg>
+            <span>차계부/정비</span>
+          </div>
+          <div class="tab-item" data-tab="admin">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <span>결재/관리</span>
+          </div>
+        </nav>
+      </div>
+
+      <!-- [2] 데스크톱 / 태블릿 확장 관리자 워크스페이스 -->
+      <div id="desktop-workspace" class="desktop-workspace">
+        <!-- Rendered by app.js -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Global Modal Overlay -->
+  <div id="modal-overlay" class="modal-overlay"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- JavaScript Modules (Loaded in dependency order) -->
+  <script src="config.js"></script>
+  <script src="js/mockData.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/components.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

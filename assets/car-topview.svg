@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 540" width="100%" height="100%">
+  <defs>
+    <!-- Car Body Metallic Gradients -->
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D323E" />
+      <stop offset="50%" stop-color="#1F232C" />
+      <stop offset="100%" stop-color="#14171E" />
+    </linearGradient>
+    <linearGradient id="glassGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(229, 169, 60, 0.25)" />
+      <stop offset="100%" stop-color="rgba(16, 185, 129, 0.15)" />
+    </linearGradient>
+    <linearGradient id="highlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.2)" />
+      <stop offset="50%" stop-color="rgba(255,255,255,0.05)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0.0)" />
+    </linearGradient>
+    <radialGradient id="tireGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4B5563" />
+      <stop offset="80%" stop-color="#1F2937" />
+      <stop offset="100%" stop-color="#111827" />
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <!-- Ground Glow/Shadow -->
+  <ellipse cx="160" cy="270" rx="110" ry="230" fill="none" stroke="rgba(229, 169, 60, 0.15)" stroke-width="2" />
+
+  <!-- Tires -->
+  <!-- Front Left -->
+  <rect x="36" y="90" width="22" height="52" rx="6" fill="url(#tireGradient)" stroke="#E5A93C" stroke-width="1.5" />
+  <!-- Front Right -->
+  <rect x="262" y="90" width="22" height="52" rx="6" fill="url(#tireGradient)" stroke="#E5A93C" stroke-width="1.5" />
+  <!-- Rear Left -->
+  <rect x="34" y="380" width="24" height="56" rx="6" fill="url(#tireGradient)" stroke="#374151" stroke-width="1.5" />
+  <!-- Rear Right -->
+  <rect x="262" y="380" width="24" height="56" rx="6" fill="url(#tireGradient)" stroke="#374151" stroke-width="1.5" />
+
+  <!-- Main Vehicle Silhouette (Chassis) -->
+  <g filter="url(#shadow)">
+    <!-- Outer Body Shell -->
+    <path d="M 160,40 
+             C 105,42 70,68 62,110 
+             C 55,160 54,340 60,420 
+             C 65,470 100,496 160,498 
+             C 220,496 255,470 260,420 
+             C 266,340 265,160 258,110 
+             C 250,68 215,42 160,40 Z" 
+          fill="url(#bodyGradient)" stroke="#4B5563" stroke-width="2" />
+
+    <!-- Hood Accent & Grill Lines -->
+    <path d="M 110,65 C 130,55 190,55 210,65 L 200,120 L 120,120 Z" fill="url(#highlight)" opacity="0.4" />
+    <line x1="120" y1="75" x2="200" y2="75" stroke="#E5A93C" stroke-width="2" stroke-linecap="round" />
+
+    <!-- Front Windshield -->
+    <path d="M 85,140 C 130,128 190,128 235,140 L 225,200 C 180,206 140,206 95,200 Z" 
+          fill="url(#glassGradient)" stroke="#E5A93C" stroke-width="1.5" />
+
+    <!-- Panoramic Sunroof / Glass Roof -->
+    <rect x="98" y="212" width="124" height="130" rx="10" fill="url(#glassGradient)" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
+
+    <!-- Rear Glass -->
+    <path d="M 92,360 C 140,352 180,352 228,360 L 220,410 C 175,418 145,418 100,410 Z" 
+          fill="url(#glassGradient)" stroke="#4B5563" stroke-width="1.5" />
+
+    <!-- Side Mirrors -->
+    <!-- Left Mirror -->
+    <path d="M 60,150 L 32,158 C 30,172 45,182 56,176 Z" fill="#2D323E" stroke="#E5A93C" stroke-width="1.5" />
+    <!-- Right Mirror -->
+    <path d="M 260,150 L 288,158 C 290,172 275,182 264,176 Z" fill="#2D323E" stroke="#E5A93C" stroke-width="1.5" />
+
+    <!-- Door Handles / Cut lines -->
+    <line x1="62" y1="210" x2="62" y2="290" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+    <line x1="258" y1="210" x2="258" y2="290" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+
+    <line x1="60" y1="300" x2="60" y2="370" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+    <line x1="260" y1="300" x2="260" y2="370" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+
+    <!-- Tail lights (LED Amber Glow) -->
+    <path d="M 75,482 C 100,488 120,490 135,490" fill="none" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+    <path d="M 245,482 C 220,488 200,490 185,490" fill="none" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+  </g>
+
+  <!-- Status Callout Indicators (Clickable Nodes for Door, Window, Tire) -->
+  <!-- Front Left Window Status Node -->
+  <g class="status-node" id="node-window-fl" transform="translate(45, 180)">
+    <circle r="12" fill="#181B22" stroke="#10B981" stroke-width="2" />
+    <text x="0" y="4" font-family="sans-serif" font-size="10" font-weight="bold" fill="#10B981" text-anchor="middle">✓</text>
+  </g>
+
+  <!-- Front Right Window Status Node -->
+  <g class="status-node" id="node-window-fr" transform="translate(275, 180)">
+    <circle r="12" fill="#181B22" stroke="#10B981" stroke-width="2" />
+    <text x="0" y="4" font-family="sans-serif" font-size="10" font-weight="bold" fill="#10B981" text-anchor="middle">✓</text>
+  </g>
+
+  <!-- Trunk / Rear Status Node -->
+  <g class="status-node" id="node-trunk" transform="translate(160, 440)">
+    <circle r="14" fill="#181B22" stroke="#E5A93C" stroke-width="2" />
+    <text x="0" y="4" font-family="sans-serif" font-size="10" font-weight="bold" fill="#E5A93C" text-anchor="middle">LOCK</text>
+  </g>
+</svg>

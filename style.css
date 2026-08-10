@@ -1,0 +1,752 @@
+/* ==========================================================================
+   강동어울림복지관 차량통합관리 스마트 앱 (style.css)
+   디자인 스펙: 다크 옵시디언 타이타늄(Dark Obsidian Titanium) + 웜 앰버 골드(Warm Amber Gold)
+   규격: 흰색/파란색 기본 색상 지양, 글래스모피즘, 모바일/데스크톱 전문가 UI
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+:root {
+  /* Core Dark Obsidian Palette */
+  --bg-base: #0D0F14;
+  --bg-surface: #141720;
+  --bg-card: rgba(24, 28, 38, 0.75);
+  --bg-card-hover: rgba(33, 39, 54, 0.85);
+  --bg-input: rgba(15, 18, 26, 0.8);
+  
+  /* Borders & Glass Effects */
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-strong: rgba(229, 169, 60, 0.35);
+  --glass-blur: blur(16px);
+  --shadow-glass: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 20px rgba(229, 169, 60, 0.25);
+
+  /* Metallic Warm Amber Gold Accents */
+  --accent-gold: #E5A93C;
+  --accent-gold-hover: #F5B842;
+  --accent-gold-dark: #B87C1D;
+  --accent-gold-glow: rgba(229, 169, 60, 0.2);
+
+  /* Status Colors */
+  --status-emerald: #10B981;
+  --status-emerald-bg: rgba(16, 185, 129, 0.15);
+  --status-amber: #F59E0B;
+  --status-amber-bg: rgba(245, 158, 11, 0.15);
+  --status-rose: #EF4444;
+  --status-rose-bg: rgba(239, 68, 68, 0.15);
+  --status-gray: #6B7280;
+  --status-gray-bg: rgba(107, 114, 128, 0.15);
+
+  /* Text Colors */
+  --text-main: #F1F5F9;
+  --text-muted: #94A3B8;
+  --text-dim: #64748B;
+  --text-gold: #F5C768;
+
+  /* Typography */
+  --font-family: 'Outfit', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Resets */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(229, 169, 60, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.04) 0%, transparent 40%);
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent-gold);
+  text-decoration: none;
+}
+
+/* Utility Classes */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+  border-radius: var(--radius-md);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #FFF3C4 0%, #E5A93C 50%, #B87C1D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.badge-available { background: var(--status-emerald-bg); color: var(--status-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-maintenance { background: var(--status-amber-bg); color: var(--status-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-accident { background: var(--status-rose-bg); color: var(--status-rose); border: 1px solid rgba(239, 68, 68, 0.3); }
+.badge-scrapped { background: var(--status-gray-bg); color: var(--status-gray); border: 1px solid rgba(107, 114, 128, 0.3); }
+
+/* Main App Wrapper (Responsive PC + Mobile Container) */
+#app-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px;
+  gap: 24px;
+}
+
+/* Role Selector Top Bar (For Easy Admin & Staff Testing) */
+#role-test-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: #090B0E;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 9999;
+  font-size: 0.8rem;
+}
+
+#role-test-bar select {
+  background: #181B22;
+  border: 1px solid var(--border-glass-strong);
+  color: var(--accent-gold);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.app-wrapper {
+  margin-top: 40px;
+  display: flex;
+  width: 100%;
+  max-width: 1380px;
+  gap: 24px;
+}
+
+/* Mobile Device Frame Simulator */
+.mobile-frame {
+  width: 390px;
+  min-width: 390px;
+  height: 830px;
+  background: var(--bg-surface);
+  border-radius: 44px;
+  border: 10px solid #222632;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Notch & Status Bar */
+.mobile-status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background: transparent;
+  z-index: 100;
+}
+
+.notch {
+  width: 110px;
+  height: 24px;
+  background: #000;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Mobile Header (Mercedes Emblem Bar) */
+.mobile-header {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.brand-emblem {
+  width: 36px;
+  height: 36px;
+}
+
+.brand-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.header-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: var(--transition-fast);
+}
+
+.header-btn:hover {
+  background: rgba(229, 169, 60, 0.15);
+  color: var(--accent-gold);
+}
+
+/* Mobile Main Scroll Content Area */
+.mobile-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 90px;
+  scroll-behavior: smooth;
+}
+
+.mobile-content::-webkit-scrollbar {
+  width: 4px;
+}
+.mobile-content::-webkit-scrollbar-thumb {
+  background: var(--border-glass-strong);
+  border-radius: 4px;
+}
+
+/* Bottom Navigation Bar (Mercedes Mobile App Style) */
+.mobile-tab-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 76px;
+  background: rgba(13, 15, 20, 0.92);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-bottom: 12px;
+  z-index: 100;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: var(--transition-fast);
+  width: 20%;
+}
+
+.tab-item svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.tab-item.active {
+  color: var(--accent-gold);
+}
+
+.tab-item.active svg {
+  filter: drop-shadow(0 0 6px rgba(229, 169, 60, 0.5));
+}
+
+/* Splash Screen Modal */
+#splash-screen {
+  position: absolute;
+  inset: 0;
+  background: #090B0E;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  transition: opacity 0.5s ease;
+}
+
+.splash-emblem {
+  width: 110px;
+  height: 110px;
+  animation: pulseEmblem 2s infinite ease-in-out;
+}
+
+@keyframes pulseEmblem {
+  0% { transform: scale(0.96); opacity: 0.8; }
+  50% { transform: scale(1.04); opacity: 1; filter: drop-shadow(0 0 20px rgba(229, 169, 60, 0.4)); }
+  100% { transform: scale(0.96); opacity: 0.8; }
+}
+
+/* Vehicle Overhead Card (Mercedes Style Interactive Visualizer) */
+.vehicle-card {
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-glass-strong);
+}
+
+.vehicle-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.vehicle-name-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.topview-container {
+  width: 100%;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 10px 0;
+}
+
+.topview-container svg {
+  height: 100%;
+  max-width: 100%;
+}
+
+.quick-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.stat-pill {
+  background: rgba(15, 18, 26, 0.7);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.stat-pill .label {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.stat-pill .value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+/* Digital Extras / Status List (Mercedes Screenshot 3 style) */
+.digital-extras-container {
+  margin-top: 16px;
+}
+
+.extra-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: var(--transition-fast);
+}
+
+.extra-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-glass-strong);
+}
+
+.extra-info h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.extra-info p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.extra-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(229, 169, 60, 0.1);
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* General Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dark) 100%);
+  color: #000;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 14px rgba(229, 169, 60, 0.3);
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(229, 169, 60, 0.45);
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-emergency {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+}
+
+.btn-emergency:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #FFF;
+}
+
+/* PC / Expanded Workspace Dashboard Side */
+.desktop-workspace {
+  flex: 1;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-glass);
+  padding: 24px;
+  box-shadow: var(--shadow-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 830px;
+}
+
+.desktop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 16px;
+}
+
+.desktop-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* Form Groups & Inputs */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  transition: var(--transition-fast);
+}
+
+.form-control:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px var(--accent-gold-glow);
+}
+
+/* Calendar Timeline Grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 6px 0;
+}
+
+.calendar-day-cell {
+  background: rgba(15, 18, 26, 0.5);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  min-height: 70px;
+  padding: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.calendar-day-cell:hover {
+  border-color: var(--accent-gold);
+  background: rgba(229, 169, 60, 0.05);
+}
+
+.calendar-day-cell.has-booking {
+  border-left: 3px solid var(--accent-gold);
+}
+
+.booking-pill {
+  background: rgba(229, 169, 60, 0.2);
+  color: var(--accent-gold);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.65rem;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Data Tables */
+.custom-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.custom-table th {
+  background: rgba(10, 12, 18, 0.8);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.custom-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-glass);
+  color: var(--text-main);
+}
+
+.custom-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-body {
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glass-strong);
+}
+
+/* Toast Notifications */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  background: #181C26;
+  border: 1px solid var(--accent-gold);
+  color: var(--text-main);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Print Styles for Monthly Report PDF Output */
+@media print {
+  body {
+    background: #FFF !important;
+    color: #000 !important;
+  }
+  #role-test-bar, .mobile-frame, #toast-container, .btn-primary, .btn-secondary {
+    display: none !important;
+  }
+  .desktop-workspace {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .printable-report {
+    color: #000 !important;
+    font-size: 10pt;
+  }
+  .printable-report table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .printable-report th, .printable-report td {
+    border: 1px solid #000 !important;
+    padding: 6px;
+    color: #000 !important;
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 960px) {
+  #app-container {
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+  }
+  .app-wrapper {
+    flex-direction: column;
+    align-items: center;
+  }
+  .mobile-frame {
+    width: 100%;
+    max-width: 420px;
+    height: 800px;
+    border-width: 4px;
+    border-radius: 28px;
+  }
+  .desktop-workspace {
+    width: 100%;
+    min-height: auto;
+  }
+}

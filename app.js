@@ -1,0 +1,591 @@
+/**
+ * 강동어울림복지관 차량통합관리 - 메인 애플리케이션 수석 컨트롤러 (app.js)
+ */
+
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚗 Initializing Gangdong Eoullim Vehicle Integrated App...');
+
+  // 1. 초기 데이터 및 상태 로드
+  await AppStore.loadInitialData();
+
+  // 2. DOM 요소 바인딩
+  const roleSelect = document.getElementById('role-selector');
+  const splashScreen = document.getElementById('splash-screen');
+  const mobileContent = document.getElementById('mobile-content');
+  const desktopWorkspace = document.getElementById('desktop-workspace');
+  const tabItems = document.querySelectorAll('.tab-item');
+  const modalOverlay = document.getElementById('modal-overlay');
+
+  // 스플래시 화면 1.2초 후 자동 숨김
+  setTimeout(() => {
+    if (splashScreen) {
+      splashScreen.style.opacity = '0';
+      setTimeout(() => splashScreen.style.display = 'none', 500);
+    }
+  }, 1200);
+
+  // 3. 상태 변경 구독 및 뷰 갱신
+  AppStore.subscribe((state) => {
+    renderApp(state);
+  });
+
+  // 초기 1회 렌더링
+  renderApp(AppStore.state);
+
+  // 4. 이벤트 리스너 등록
+
+  // 4.1 역할 변경 스위처 (테스트용)
+  if (roleSelect) {
+    roleSelect.addEventListener('change', (e) => {
+      const position = e.target.value;
+      AppStore.setCurrentUserByRole(position);
+      showToast(`사용자 권한이 [${position}] (으)로 전환되었습니다.`);
+    });
+  }
+
+  // 4.2 모바일 하단 탭바 전환
+  tabItems.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+      tabItems.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      AppStore.setState({ activeTab: tabName });
+    });
+  });
+
+  // 4.3 모달 닫기버튼 글로벌 바인딩
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-close-btn') || e.target === modalOverlay) {
+      closeModal();
+    }
+  });
+
+  /**
+   * 메인 렌더링 루틴
+   */
+  function renderApp(state) {
+    const { currentUser, activeVehicleId, activeTab, data } = state;
+    const activeVehicle = AppStore.getActiveVehicle();
+    const insurance = data.Insurance.find(i => i.vehicle_id === activeVehicleId);
+
+    // [A] 모바일 뷰 렌더링 (탭별 분기)
+    if (mobileContent) {
+      if (activeTab === 'home') {
+        const pendingCount = data.DriveRequests.filter(r => r.approval_status === '대기').length;
+        mobileContent.innerHTML = `
+          ${AppComponents.renderVehicleVisualizer(activeVehicle, data.Vehicles)}
+          ${AppComponents.renderDigitalExtras(activeVehicle, insurance, pendingCount)}
+          <div style="margin-top:16px;">
+            ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId)}
+          </div>
+        `;
+      } else if (activeTab === 'schedule') {
+        mobileContent.innerHTML = `
+          ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId)}
+        `;
+      } else if (activeTab === 'drivelog') {
+        mobileContent.innerHTML = renderDriveLogTab(data.DriveLogs, activeVehicleId);
+      } else if (activeTab === 'maint') {
+        mobileContent.innerHTML = renderMaintenanceAndAccidentsTab(data, activeVehicleId);
+      } else if (activeTab === 'admin') {
+        mobileContent.innerHTML = renderAdminAndReportTab(data, currentUser);
+      }
+
+      // 차량 선택 드롭다운 리스너 바인딩
+      const vSelect = document.getElementById('vehicle-select-dropdown');
+      if (vSelect) {
+        vSelect.addEventListener('change', (e) => {
+          AppStore.setState({ activeVehicleId: e.target.value });
+        });
+      }
+
+      // 모바일 뷰 내 버튼 리스너 바인딩
+      bindTabButtons();
+    }
+
+    // [B] 데스크톱 대시보드 렌더링 (PC 멀티컬럼 와이드 뷰)
+    if (desktopWorkspace) {
+      desktopWorkspace.innerHTML = `
+        <div class="desktop-header">
+          <div>
+            <h2>${APP_CONFIG.ORGANIZATION_NAME} 차량 통합 관리 대시보드</h2>
+            <div style="font-size:0.85rem; color:var(--text-muted);">
+              현재 접속자: <strong style="color:var(--accent-gold);">${currentUser ? currentUser.name : '김복지'}</strong> (${currentUser ? currentUser.position : '팀원'}) | 
+              선택 차량: <strong style="color:var(--status-emerald);">${activeVehicle.vehicle_id}</strong>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button id="btn-desktop-request" class="btn-primary" style="width:auto; padding:8px 16px; font-size:0.85rem;">+ 운행 신청</button>
+            <button id="btn-desktop-report" class="btn-secondary" style="width:auto; padding:8px 16px; font-size:0.85rem;">📋 월별보고서 인쇄/PDF</button>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+          <div>
+            ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId)}
+          </div>
+          <div>
+            ${renderDriveLogTab(data.DriveLogs, activeVehicleId)}
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          ${renderMaintenanceAndAccidentsTab(data, activeVehicleId)}
+        </div>
+      `;
+
+      // 데스크톱 상단 버튼 이벤트 바인딩
+      const btnDeskReq = document.getElementById('btn-desktop-request');
+      if (btnDeskReq) btnDeskReq.addEventListener('click', openRequestModal);
+      const btnDeskRep = document.getElementById('btn-desktop-report');
+      if (btnDeskRep) btnDeskRep.addEventListener('click', openMonthlyReportModal);
+    }
+  }
+
+  /**
+   * 탭별 내부 동적 HTML 렌더러
+   */
+  function renderDriveLogTab(logs, vehicleId) {
+    const vehLogs = logs.filter(l => l.vehicle_id === vehicleId);
+    return `
+      <div class="glass-panel" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1rem; font-weight:700;">📑 차량운행일지 목록</h3>
+          <button id="btn-open-drivelog-modal" class="btn-primary" style="padding:6px 12px; font-size:0.8rem; width:auto;">+ 운행일지 작성</button>
+        </div>
+
+        <div class="custom-table-container">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>운행일자</th>
+                <th>운전자</th>
+                <th>목적지</th>
+                <th>주행거리</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${vehLogs.map(l => `
+                <tr>
+                  <td><strong>${l.date}</strong></td>
+                  <td>${l.driver_name || '김복지'}</td>
+                  <td>${l.destination}</td>
+                  <td><strong style="color:var(--accent-gold);">${l.distance_km} km</strong></td>
+                </tr>
+              `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:20px;">작성된 운행일지가 없습니다.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMaintenanceAndAccidentsTab(data, vehicleId) {
+    const fuelLogs = data.Fuel.filter(f => f.vehicle_id === vehicleId);
+    const maintLogs = data.Maintenance.filter(m => m.vehicle_id === vehicleId);
+    const accLogs = data.Accidents.filter(a => a.vehicle_id === vehicleId);
+
+    return `
+      <div class="glass-panel" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1rem; font-weight:700;">🛠️ 차계부 및 정비/사고 이력</h3>
+          <div style="display:flex; gap:6px;">
+            <button id="btn-open-accident-modal" class="btn-secondary btn-emergency" style="padding:4px 10px; font-size:0.75rem; width:auto;">🚨 사고 경위서 작성 (v1.1)</button>
+            <button id="btn-open-fuel-modal" class="btn-primary" style="padding:4px 10px; font-size:0.75rem; width:auto;">+ 주유 입력</button>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.75rem; color:var(--text-muted);">최근 주유 기록 (${fuelLogs.length}건)</div>
+            ${fuelLogs.length > 0 ? `<div style="font-size:0.95rem; font-weight:700; color:var(--accent-gold); margin-top:4px;">${fuelLogs[0].station} - ${fuelLogs[0].amount_won.toLocaleString()}원</div>` : '<div style="font-size:0.8rem; color:var(--text-dim);">기록 없음</div>'}
+          </div>
+          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="font-size:0.75rem; color:var(--text-muted);">등록된 사고 경위서 (v1.1)</div>
+            ${accLogs.length > 0 ? `<div style="font-size:0.9rem; font-weight:700; color:var(--status-rose); margin-top:4px;">${accLogs[0].accident_role}사고 (${accLogs[0].date})</div>` : '<div style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">무사고 차량</div>'}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAdminAndReportTab(data, currentUser) {
+    const isApprover = ['팀장', '차량관리담당자', '사무국장', '관장'].includes(currentUser ? currentUser.position : '');
+    const pendingReqs = data.DriveRequests.filter(r => r.approval_status === '대기');
+
+    return `
+      <div class="glass-panel" style="padding:16px;">
+        <h3 style="font-size:1rem; font-weight:700; margin-bottom:12px;">⚙️ 결재 및 시스템 통합 관리자</h3>
+
+        ${isApprover ? `
+          <div style="margin-bottom:16px; background:rgba(229,169,60,0.1); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass-strong);">
+            <h4 style="font-size:0.9rem; color:var(--accent-gold); margin-bottom:8px;">📌 결재 대기 운행 신청 (${pendingReqs.length}건)</h4>
+            ${pendingReqs.map(req => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:var(--radius-sm); margin-bottom:6px;">
+                <div>
+                  <div style="font-weight:700; font-size:0.85rem;">${req.applicant_name} (${req.team})</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted);">${req.vehicle_id} | ${req.drive_date} (${req.start_time}~${req.end_time})</div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn-approve-req btn-primary" data-id="${req.request_id}" style="padding:4px 8px; font-size:0.75rem; width:auto;">승인</button>
+                  <button class="btn-reject-req btn-secondary" data-id="${req.request_id}" style="padding:4px 8px; font-size:0.75rem; width:auto; color:var(--status-rose);">반려</button>
+                </div>
+              </div>
+            `).join('') || '<div style="font-size:0.8rem; color:var(--text-dim);">대기 중인 운행 신청이 없습니다.</div>'}
+          </div>
+        ` : ''}
+
+        <button id="btn-open-monthly-report" class="btn-primary" style="margin-top:10px;">
+          📋 월별 운행일지 결재 보고서 조회 및 인쇄 (PDF)
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * 탭 내 동적 버튼 이벤트 바인딩
+   */
+  function bindTabButtons() {
+    const btnReq = document.getElementById('btn-open-request-modal');
+    if (btnReq) btnReq.addEventListener('click', openRequestModal);
+
+    const btnLog = document.getElementById('btn-open-drivelog-modal');
+    if (btnLog) btnLog.addEventListener('click', openDriveLogModal);
+
+    const btnAcc = document.getElementById('btn-open-accident-modal');
+    if (btnAcc) btnAcc.addEventListener('click', openAccidentModal);
+
+    const btnFuel = document.getElementById('btn-open-fuel-modal');
+    if (btnFuel) btnFuel.addEventListener('click', openFuelModal);
+
+    const btnRep = document.getElementById('btn-open-monthly-report');
+    if (btnRep) btnRep.addEventListener('click', openMonthlyReportModal);
+
+    // 승인 / 반려 버튼 핸들러
+    document.querySelectorAll('.btn-approve-req').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        await AppAPI.request('approveDriveRequest', { request_id: id, status: '승인', approver_id: AppStore.state.currentUser.user_id });
+        await AppStore.loadInitialData();
+        showToast('운행 신청이 승인되었습니다.');
+      });
+    });
+
+    document.querySelectorAll('.btn-reject-req').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        await AppAPI.request('approveDriveRequest', { request_id: id, status: '반려', approver_id: AppStore.state.currentUser.user_id });
+        await AppStore.loadInitialData();
+        showToast('운행 신청이 반려되었습니다.');
+      });
+    });
+  }
+
+  /**
+   * 모달 오픈 함수들
+   */
+  function openRequestModal() {
+    const activeVehId = AppStore.state.activeVehicleId;
+    const user = AppStore.state.currentUser || { name: '김복지', team: '복지사업팀' };
+
+    modalOverlay.innerHTML = `
+      <div class="modal-body glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">🚗 차량 운행 신청</h3>
+          <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+        </div>
+
+        <form id="request-submit-form">
+          <div class="form-group">
+            <label>신청자 / 팀명</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="text" class="form-control" value="${user.name}" readonly>
+              <input type="text" class="form-control" value="${user.team}" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>신청 차량 *</label>
+            <select name="vehicle_id" class="form-control" required>
+              ${AppStore.state.data.Vehicles.map(v => `<option value="${v.vehicle_id}" ${v.vehicle_id === activeVehId ? 'selected' : ''}>${v.vehicle_id} (${v.model})</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>운행 예정일 *</label>
+            <input type="date" name="drive_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+          </div>
+
+          <div class="form-group">
+            <label>운행 예정 시간 (시작 ~ 종료) *</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="time" name="start_time" class="form-control" value="09:00" required>
+              <input type="time" name="end_time" class="form-control" value="12:00" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>운행 목적 *</label>
+            <textarea name="purpose" class="form-control" rows="2" placeholder="운행 목적을 입력하십시오." required></textarea>
+          </div>
+
+          <div id="conflict-warning" style="display:none; color:var(--status-rose); font-size:0.8rem; margin-bottom:10px; font-weight:700;">
+            ⚠️ 입력하신 시간대에 해당 차량의 기존 승인/대기 예약이 존재합니다! (중복 예약 불가능)
+          </div>
+
+          <button type="submit" class="btn-primary">운행 신청 제출</button>
+        </form>
+      </div>
+    `;
+    openModal();
+
+    // 중복 예약 실시간 검증 핸들러
+    const form = document.getElementById('request-submit-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const vehicle_id = formData.get('vehicle_id');
+      const drive_date = formData.get('drive_date');
+      const start_time = formData.get('start_time');
+      const end_time = formData.get('end_time');
+
+      // 실시간 중복 체크
+      const isConflict = AppStore.checkBookingConflict(vehicle_id, drive_date, start_time, end_time);
+      if (isConflict) {
+        document.getElementById('conflict-warning').style.display = 'block';
+        return;
+      }
+
+      await AppAPI.request('createDriveRequest', {
+        applicant_id: user.user_id || '1001',
+        applicant_name: user.name,
+        team: user.team,
+        vehicle_id,
+        drive_date,
+        start_time,
+        end_time,
+        purpose: formData.get('purpose')
+      });
+
+      await AppStore.loadInitialData();
+      closeModal();
+      showToast('운행 신청이 성공적으로 접수되었습니다.');
+    });
+  }
+
+  function openDriveLogModal() {
+    const activeVeh = AppStore.getActiveVehicle();
+    const user = AppStore.state.currentUser || { name: '김복지' };
+
+    modalOverlay.innerHTML = `
+      <div class="modal-body glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">📑 차량운행일지 작성</h3>
+          <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+        </div>
+
+        <form id="drivelog-submit-form">
+          <input type="hidden" name="vehicle_id" value="${activeVeh.vehicle_id}">
+
+          <div class="form-group">
+            <label>운행일자 / 운전자</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="date" name="date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+              <input type="text" class="form-control" value="${user.name}" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>출발시간 / 도착시간</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="time" name="depart_time" class="form-control" value="09:30" required>
+              <input type="time" name="arrival_time" class="form-control" value="11:40" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>목적지 / 운행목적</label>
+            <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:8px;">
+              <input type="text" name="destination" class="form-control" placeholder="목적지" required>
+              <input type="text" name="purpose" class="form-control" placeholder="운행목적" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>출발 km (직전 종료km 자동제안) / 도착 km *</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="number" id="start_km" name="start_km" class="form-control" value="${activeVeh.current_mileage}" required>
+              <input type="number" id="end_km" name="end_km" class="form-control" value="${activeVeh.current_mileage + 25}" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary">운행일지 저장</button>
+        </form>
+      </div>
+    `;
+    openModal();
+
+    const form = document.getElementById('drivelog-submit-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const start_km = Number(formData.get('start_km'));
+      const end_km = Number(formData.get('end_km'));
+      const distance_km = end_km - start_km;
+
+      await AppAPI.request('createDriveLog', {
+        vehicle_id: activeVeh.vehicle_id,
+        date: formData.get('date'),
+        driver_id: user.user_id || '1001',
+        driver_name: user.name,
+        depart_time: formData.get('depart_time'),
+        arrival_time: formData.get('arrival_time'),
+        destination: formData.get('destination'),
+        purpose: formData.get('purpose'),
+        start_km,
+        end_km,
+        distance_km
+      });
+
+      await AppStore.loadInitialData();
+      closeModal();
+      showToast(`운행일지가 저장되었습니다. (주행거리: ${distance_km}km)`);
+    });
+  }
+
+  function openAccidentModal() {
+    const activeVeh = AppStore.getActiveVehicle();
+    const user = AppStore.state.currentUser || { name: '김복지' };
+    const insurance = AppStore.state.data.Insurance.find(i => i.vehicle_id === activeVeh.vehicle_id);
+
+    modalOverlay.innerHTML = AppComponents.renderAccidentFormModal(activeVeh.vehicle_id, user.name, insurance);
+    openModal();
+
+    const form = document.getElementById('accident-submit-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+
+        await AppAPI.request('createAccidentLog', {
+          vehicle_id: activeVeh.vehicle_id,
+          date: formData.get('date'),
+          driver_id: user.user_id || '1001',
+          driver_name: user.name,
+          location: formData.get('location'),
+          accident_role: formData.get('accident_role'),
+          damage_person_yn: formData.get('damage_person_yn') || 'N',
+          damage_person_detail: formData.get('damage_person_detail') || '',
+          damage_property_yn: formData.get('damage_property_yn') || 'N',
+          damage_property_detail: formData.get('damage_property_detail') || '',
+          counterpart_name: formData.get('counterpart_name') || '',
+          counterpart_phone: formData.get('counterpart_phone') || '',
+          counterpart_insurance: formData.get('counterpart_insurance') || '',
+          description: formData.get('description')
+        });
+
+        await AppStore.loadInitialData();
+        closeModal();
+        showToast('사고 경위서(v1.1)가 성공적으로 접수되었습니다.');
+      });
+    }
+  }
+
+  function openFuelModal() {
+    const activeVeh = AppStore.getActiveVehicle();
+
+    modalOverlay.innerHTML = `
+      <div class="modal-body glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">⛽ 주유 기록 입력</h3>
+          <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+        </div>
+
+        <form id="fuel-submit-form">
+          <input type="hidden" name="vehicle_id" value="${activeVeh.vehicle_id}">
+          <div class="form-group">
+            <label>주유 일자 / 주유소명</label>
+            <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:8px;">
+              <input type="date" name="date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+              <input type="text" name="station" class="form-control" placeholder="주유소명" value="GS칼텍스 강동주유소" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>주유 금액(원) / 주유량(L)</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="number" name="amount_won" class="form-control" value="65000" required>
+              <input type="number" step="0.1" name="liter" class="form-control" value="42.0" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">주유 기록 저장</button>
+        </form>
+      </div>
+    `;
+    openModal();
+
+    const form = document.getElementById('fuel-submit-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const amount = Number(formData.get('amount_won'));
+      const liter = Number(formData.get('liter'));
+      const unit_price = Math.round(amount / liter);
+
+      await AppAPI.request('createFuelLog', {
+        vehicle_id: activeVeh.vehicle_id,
+        date: formData.get('date'),
+        station: formData.get('station'),
+        amount_won: amount,
+        liter,
+        unit_price
+      });
+
+      await AppStore.loadInitialData();
+      closeModal();
+      showToast(`주유 기록이 저장되었습니다. (리터당 단가: ${unit_price.toLocaleString()}원)`);
+    });
+  }
+
+  function openMonthlyReportModal() {
+    const activeVeh = AppStore.getActiveVehicle();
+    const logs = AppStore.state.data.DriveLogs.filter(l => l.vehicle_id === activeVeh.vehicle_id);
+
+    modalOverlay.innerHTML = `
+      <div class="modal-body glass-panel" style="max-width:780px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">📋 월별 운행일지 보고서 (인쇄/PDF 미리보기)</h3>
+          <div style="display:flex; gap:8px;">
+            <button onclick="window.print()" class="btn-primary" style="padding:4px 12px; font-size:0.8rem; width:auto;">🖨️ 인쇄 / PDF 출력</button>
+            <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+          </div>
+        </div>
+        ${AppComponents.renderMonthlyApprovalReport('2026년 08월', activeVeh.vehicle_id, logs, AppStore.state.data.ApprovalLogs)}
+      </div>
+    `;
+    openModal();
+  }
+
+  function openModal() {
+    modalOverlay.classList.add('active');
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('active');
+  }
+
+  /**
+   * 토스트 알림 메시지 출력
+   */
+  function showToast(msg) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<span>✨</span> <div>${msg}</div>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
+  }
+});
