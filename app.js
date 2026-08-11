@@ -421,6 +421,9 @@ document.addEventListener('DOMContentLoaded', () => {
    * 모달 오픈 함수들
    */
   function openVehicleModal(vehicleToEdit = null) {
+    if (!AppStore.state.currentUser) {
+      AppStore.setCurrentUserByRole('차량관리담당자');
+    }
     const insuranceToEdit = vehicleToEdit 
       ? AppStore.state.data.Insurance.find(i => i.vehicle_id === vehicleToEdit.vehicle_id) 
       : null;

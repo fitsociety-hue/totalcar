@@ -18,11 +18,11 @@ const AppComponents = {
           <div style="font-size:2.8rem; margin-bottom:12px;">🚗</div>
           <h3 style="font-size:1.1rem; color:var(--accent-gold); margin-bottom:8px;">등록된 차량이 없습니다</h3>
           <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">
-            ${isVehicleManager ? '차량을 추가하면 운행 관리 및 캘린더 예약을 시작할 수 있습니다.' : '차량관리담당자 계정으로 전환하거나 차량 등록을 진행하세요.'}
+            첫 번째 복지관 차량을 신규 등록하시면 운행 관리 및 캘린더 예약을 바로 시작하실 수 있습니다.
           </p>
-          ${isVehicleManager ? `
-            <button id="btn-empty-add-vehicle" class="btn-primary" style="width:auto; display:inline-block; padding:8px 18px; font-size:0.85rem;">+ 첫 차량 등록하기</button>
-          ` : ''}
+          <button id="btn-empty-add-vehicle" class="btn-primary" style="width:auto; display:inline-block; padding:10px 24px; font-size:0.9rem;">
+            + 첫 차량 등록하기
+          </button>
         </div>
       `;
     }
