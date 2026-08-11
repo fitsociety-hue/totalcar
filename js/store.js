@@ -382,12 +382,14 @@ const AppStore = {
 
     const vehicles = (this.state.data.Vehicles || []).filter(v => v.vehicle_id !== vehicleId);
     const insurances = (this.state.data.Insurance || []).filter(i => i.vehicle_id !== vehicleId);
+    const updatedData = { ...this.state.data, Vehicles: vehicles, Insurance: insurances };
+
+    AppAPI.saveStorage(updatedData);
 
     const newActiveId = vehicles.length > 0 ? vehicles[0].vehicle_id : '';
     this.setState({ data: updatedData, activeVehicleId: newActiveId });
     await AppAPI.request('deleteVehicle', { vehicle_id: vehicleId });
     return { success: true };
-  }
   }
 };
 
