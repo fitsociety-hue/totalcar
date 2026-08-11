@@ -7,16 +7,20 @@
       <stop offset="70%" stop-color="#B87C1D" />
       <stop offset="100%" stop-color="#F5C768" />
     </linearGradient>
-    <radialGradient id="ringBg" cx="50%" cy="50%" r="50%">
-      <stop offset="70%" stop-color="#0A0A0A" />
-      <stop offset="100%" stop-color="#050505" />
-    </radialGradient>
     <linearGradient id="deepGold" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#F5C768" />
       <stop offset="100%" stop-color="#B87C1D" />
     </linearGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(229, 169, 60, 0.15)" />
+      <stop offset="100%" stop-color="rgba(10, 10, 10, 0)" />
+    </radialGradient>
     <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="softGlow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
@@ -31,45 +35,36 @@
   <!-- Inner Gold Decorative Ring -->
   <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(229, 169, 60, 0.15)" stroke-width="0.5" stroke-dasharray="3,2" />
 
-  <!-- People Circle (5 stylized people holding hands) -->
-  <g transform="translate(100, 100)" fill="url(#goldGradient)" stroke="none">
-    <!-- Person 1 (Top) -->
-    <g transform="rotate(0)">
-      <circle cx="0" cy="-52" r="8" />
-      <path d="M -6,-42 C -6,-42 -10,-28 -14,-22 L -6,-22 L -4,-32 L 0,-32 L 4,-32 L 6,-22 L 14,-22 C 10,-28 6,-42 6,-42 Z" />
-    </g>
-    <!-- Person 2 (Upper Right) -->
-    <g transform="rotate(72)">
-      <circle cx="0" cy="-52" r="8" />
-      <path d="M -6,-42 C -6,-42 -10,-28 -14,-22 L -6,-22 L -4,-32 L 0,-32 L 4,-32 L 6,-22 L 14,-22 C 10,-28 6,-42 6,-42 Z" />
-    </g>
-    <!-- Person 3 (Lower Right) -->
-    <g transform="rotate(144)">
-      <circle cx="0" cy="-52" r="8" />
-      <path d="M -6,-42 C -6,-42 -10,-28 -14,-22 L -6,-22 L -4,-32 L 0,-32 L 4,-32 L 6,-22 L 14,-22 C 10,-28 6,-42 6,-42 Z" />
-    </g>
-    <!-- Person 4 (Lower Left) -->
-    <g transform="rotate(216)">
-      <circle cx="0" cy="-52" r="8" />
-      <path d="M -6,-42 C -6,-42 -10,-28 -14,-22 L -6,-22 L -4,-32 L 0,-32 L 4,-32 L 6,-22 L 14,-22 C 10,-28 6,-42 6,-42 Z" />
-    </g>
-    <!-- Person 5 (Upper Left) -->
-    <g transform="rotate(288)">
-      <circle cx="0" cy="-52" r="8" />
-      <path d="M -6,-42 C -6,-42 -10,-28 -14,-22 L -6,-22 L -4,-32 L 0,-32 L 4,-32 L 6,-22 L 14,-22 C 10,-28 6,-42 6,-42 Z" />
-    </g>
+  <!-- Subtle center glow -->
+  <circle cx="100" cy="95" r="50" fill="url(#centerGlow)" />
 
-    <!-- Connecting hands circle arc -->
-    <circle cx="0" cy="0" r="32" fill="none" stroke="url(#goldGradient)" stroke-width="3" stroke-linecap="round" />
+  <!-- ========================================= -->
+  <!-- Steering Wheel Emblem                     -->
+  <!-- ========================================= -->
+  <g transform="translate(100, 95)" fill="none" stroke="url(#goldGradient)" filter="url(#softGlow)">
+
+    <!-- Outer steering wheel rim -->
+    <circle cx="0" cy="0" r="45" stroke-width="6" stroke-linecap="round" />
+
+    <!-- Inner hub ring -->
+    <circle cx="0" cy="0" r="14" stroke-width="3" />
+
+    <!-- Spoke 1: Top (12 o'clock) -->
+    <line x1="0" y1="-14" x2="0" y2="-39" stroke-width="5" stroke-linecap="round" />
+
+    <!-- Spoke 2: Lower-Left (7 o'clock) -->
+    <line x1="-12.1" y1="7" x2="-33.8" y2="19.5" stroke-width="5" stroke-linecap="round" />
+
+    <!-- Spoke 3: Lower-Right (5 o'clock) -->
+    <line x1="12.1" y1="7" x2="33.8" y2="19.5" stroke-width="5" stroke-linecap="round" />
+
   </g>
 
-  <!-- Center Star Accent -->
-  <g transform="translate(100, 100)" fill="url(#deepGold)">
-    <polygon points="0,-12 3,-4 12,-4 5,2 7,10 0,6 -7,10 -5,2 -12,-4 -3,-4" />
-  </g>
+  <!-- Center hub accent dot -->
+  <circle cx="100" cy="95" r="4" fill="url(#deepGold)" />
 
   <!-- Bottom Text Arc: "어울림" -->
-  <path id="textArc" d="M 35,140 A 80,80 0 0,0 165,140" fill="none" />
+  <path id="textArc" d="M 35,145 A 80,80 0 0,0 165,145" fill="none" />
   <text fill="url(#goldGradient)" font-size="10" font-weight="700" letter-spacing="4">
     <textPath href="#textArc" startOffset="50%" text-anchor="middle">어 울 림</textPath>
   </text>
