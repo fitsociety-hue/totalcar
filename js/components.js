@@ -9,12 +9,27 @@ const AppComponents = {
    * 1. 메르세데스 벤츠 스타일 탑뷰 비주얼라이저 카드
    */
   renderVehicleVisualizer(vehicle, allVehicles) {
+    const currentUser = AppStore.state.currentUser;
+    const isVehicleManager = currentUser && ['차량관리담당자', '사무국장', '관장'].includes(currentUser.position);
+
+    if (!vehicle || !vehicle.vehicle_id || vehicle.vehicle_id === '미등록' || !allVehicles || allVehicles.length === 0) {
+      return `
+        <div class="vehicle-card glass-panel" style="text-align:center; padding:32px 16px;">
+          <div style="font-size:2.8rem; margin-bottom:12px;">🚗</div>
+          <h3 style="font-size:1.1rem; color:var(--accent-gold); margin-bottom:8px;">등록된 차량이 없습니다</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">
+            ${isVehicleManager ? '차량을 추가하면 운행 관리 및 캘린더 예약을 시작할 수 있습니다.' : '차량관리담당자 계정으로 전환하거나 차량 등록을 진행하세요.'}
+          </p>
+          ${isVehicleManager ? `
+            <button id="btn-empty-add-vehicle" class="btn-primary" style="width:auto; display:inline-block; padding:8px 18px; font-size:0.85rem;">+ 첫 차량 등록하기</button>
+          ` : ''}
+        </div>
+      `;
+    }
+
     const statusInfo = APP_CONFIG.VEHICLE_STATUS[
       Object.keys(APP_CONFIG.VEHICLE_STATUS).find(k => APP_CONFIG.VEHICLE_STATUS[k].code === vehicle.status) || 'AVAILABLE'
     ];
-
-    const currentUser = AppStore.state.currentUser;
-    const isVehicleManager = currentUser && ['차량관리담당자', '사무국장', '관장'].includes(currentUser.position);
 
     const vehicleOptionsHTML = allVehicles.map(v => 
       `<option value="${v.vehicle_id}" ${v.vehicle_id === vehicle.vehicle_id ? 'selected' : ''}>🚘 ${v.vehicle_id} (${v.model})</option>`
@@ -62,11 +77,11 @@ const AppComponents = {
           </div>
           <div class="stat-pill">
             <div class="label">하이패스 단말기</div>
-            <div class="value" style="font-size:0.75rem; color:#3498db; font-weight:700;">${vehicle.hipass_id || 'HP-8849201'}</div>
+            <div class="value" style="font-size:0.75rem; color:#3498db; font-weight:700;">${vehicle.hipass_id || '미등록'}</div>
           </div>
           <div class="stat-pill">
             <div class="label">보험 만료일${ddayText}</div>
-            <div class="value" style="font-size:0.75rem; color:var(--status-emerald);">${vehicle.insurance_end}</div>
+            <div class="value" style="font-size:0.75rem; color:var(--status-emerald);">${vehicle.insurance_end || '-'}</div>
           </div>
         </div>
       </div>
@@ -77,6 +92,19 @@ const AppComponents = {
    * 2. 디지털 엑스트라 / 차량 상태 목록 (벤츠 Screenshot 3 벤치마킹)
    */
   renderDigitalExtras(vehicle, insurance, pendingRequestsCount) {
+    if (!vehicle || !vehicle.vehicle_id || vehicle.vehicle_id === '미등록') {
+      return `
+        <div class="digital-extras-container">
+          <div class="extra-card">
+            <div class="extra-info">
+              <h4 style="color:var(--accent-gold);">✨ 스마트 차량통합관리 준비 완료</h4>
+              <p>차량을 신규 등록하시면 실시간 24시간 긴급출동 및 도어/정비 상태 관리를 이용하실 수 있습니다.</p>
+            </div>
+            <div class="extra-icon-box">🚘</div>
+          </div>
+        </div>
+      `;
+    }
     const insurancePhone = insurance ? insurance.claim_phone || insurance.company_phone : '1588-0100';
 
     return `

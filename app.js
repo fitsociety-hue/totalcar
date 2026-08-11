@@ -358,6 +358,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnAddVeh = document.getElementById('btn-open-add-vehicle-modal');
     if (btnAddVeh) btnAddVeh.addEventListener('click', () => openVehicleModal());
 
+    const btnEmptyAdd = document.getElementById('btn-empty-add-vehicle');
+    if (btnEmptyAdd) btnEmptyAdd.addEventListener('click', () => openVehicleModal());
+
     document.querySelectorAll('.btn-edit-vehicle').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
