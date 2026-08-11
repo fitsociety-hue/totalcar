@@ -84,9 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 3.3 모달 닫기버튼 글로벌 바인딩
+  // 3.3 모달 닫기버튼 및 바깥 배경 클릭 처리 (드래그 텍스트 선택 시 모달 닫힘 현상 완벽 방지)
+  let mouseDownTarget = null;
+  document.addEventListener('mousedown', (e) => {
+    mouseDownTarget = e.target;
+  });
+
   document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal-close-btn') || e.target === modalOverlay) {
+    if (e.target.classList.contains('modal-close-btn')) {
+      closeModal();
+      return;
+    }
+    if (e.target === modalOverlay && mouseDownTarget === modalOverlay) {
       closeModal();
     }
   });
