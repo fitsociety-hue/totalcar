@@ -219,8 +219,7 @@ const AppStore = {
   checkBookingConflict(vehicle_id, drive_date, start_time, end_time, excludeReqId = null) {
     const requests = this.state.data.DriveRequests || [];
     
-    // 승인 또는 대기 상태인 해당 차량의 신청건 확인
-    const conflicts = requests.filter(req => {
+    const conflict = requests.find(req => {
       if (req.vehicle_id !== vehicle_id) return false;
       if (req.drive_date !== drive_date) return false;
       if (req.approval_status === '반려') return false;
@@ -232,7 +231,34 @@ const AppStore = {
       return (start_time < reqEnd && end_time > reqStart);
     });
 
-    return conflicts.length > 0;
+    return conflict || null;
+  },
+
+  /**
+   * 운행 시간 / 차량 변경 협의 요청 전송
+   */
+  async sendTimeNegotiationRequest(payload) {
+    const { target_vehicle_id, drive_date, my_name, suggested_start, suggested_end, suggested_vehicle, message } = payload;
+
+    const notifMsg = `💬 [${my_name}] 님으로부터 [${target_vehicle_id}] (${drive_date}) 차량 운행 변경 협의가 도착했습니다:\n- 메시지: "${message}"\n- 조정 제안시간: ${suggested_start && suggested_end ? `${suggested_start}~${suggested_end}` : '기존 동일'}${suggested_vehicle ? `\n- 대체 추천차량: ${suggested_vehicle}` : ''}`;
+
+    const newNotif = {
+      id: `NOTIF-${Date.now()}`,
+      type: 'WARN',
+      title: '💬 차량 운행 시간/차량 변경 협의 요청',
+      message: notifMsg,
+      read: false,
+      date: new Date().toISOString().replace('T', ' ').slice(0, 16)
+    };
+
+    const notifs = [newNotif, ...(this.state.data.Notifications || [])];
+    this.setState({ data: { ...this.state.data, Notifications: notifs } });
+
+    try {
+      await AppAPI.request('sendGoogleChatNotification', { text: notifMsg });
+    } catch (e) {}
+
+    return { success: true };
   },
 
   /**

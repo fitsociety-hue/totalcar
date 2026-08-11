@@ -536,9 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const end_time = formData.get('end_time');
 
       // 실시간 중복 체크
-      const isConflict = AppStore.checkBookingConflict(vehicle_id, drive_date, start_time, end_time);
-      if (isConflict) {
-        document.getElementById('conflict-warning').style.display = 'block';
+      const priorReq = AppStore.checkBookingConflict(vehicle_id, drive_date, start_time, end_time);
+      if (priorReq) {
+        openTimeNegotiationModal(priorReq, vehicle_id, drive_date, start_time, end_time);
         return;
       }
 
@@ -550,13 +550,49 @@ document.addEventListener('DOMContentLoaded', () => {
         drive_date,
         start_time,
         end_time,
-        purpose: formData.get('purpose')
+        purpose: formData.get('purpose'),
+        approval_status: '확정(우선권)'
       });
 
       await AppStore.loadInitialData();
       closeModal();
-      showToast('운행 신청이 성공적으로 접수되었습니다.');
+      showToast('🎉 차량 운행 신청이 완료되었습니다. (선신청 우선권 확정)');
     });
+  }
+
+  function openTimeNegotiationModal(priorReq, targetVehicleId, driveDate, startTime, endTime) {
+    const user = AppStore.state.currentUser || { name: '익명 직원' };
+    const vehicles = AppStore.state.data.Vehicles || [];
+
+    modalOverlay.innerHTML = AppComponents.renderTimeNegotiationModal(
+      priorReq,
+      targetVehicleId,
+      driveDate,
+      startTime,
+      endTime,
+      vehicles
+    );
+    openModal();
+
+    const form = document.getElementById('negotiation-submit-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        await AppStore.sendTimeNegotiationRequest({
+          target_vehicle_id: targetVehicleId,
+          drive_date: driveDate,
+          my_name: user.name,
+          suggested_start: formData.get('suggested_start'),
+          suggested_end: formData.get('suggested_end'),
+          suggested_vehicle: formData.get('suggested_vehicle'),
+          message: formData.get('message')
+        });
+
+        closeModal();
+        showToast(`💬 [${priorReq.applicant_name}] 우선권 예약자에게 시간/차량 변경 협의 메시지가 전송되었습니다.`);
+      });
+    }
   }
 
   function openDriveLogModal() {

@@ -142,26 +142,29 @@ function addDriveRequest(ss, data) {
     data.start_time || '',
     data.end_time || '',
     data.purpose || '',
-    data.approval_status || '승인',
-    data.approver_id || '',
+    data.approval_status || '확정(우선권)',
+    data.approver_id || '자동확정',
     nowStr
   ]);
 
-  return { request_id: reqId, status: '대기' };
+  return { request_id: reqId, status: '확정' };
 }
 
 /**
- * 운행 신청 승인/반려 업데이트
+ * 운행 신청 시간/차량 변경 (시간 협의 수락 시)
  */
-function updateApprovalStatus(ss, data) {
+function updateDriveRequestTime(ss, data) {
   var sheet = ss.getSheetByName('DriveRequests');
   if (!sheet) return false;
 
   var values = sheet.getDataRange().getValues();
   for (var i = 1; i < values.length; i++) {
     if (values[i][0] === data.request_id) {
-      sheet.getRange(i + 1, 9).setValue(data.status); // approval_status (9번째 컬럼)
-      sheet.getRange(i + 1, 10).setValue(data.approver_id || ''); // approver_id
+      if (data.vehicle_id) sheet.getRange(i + 1, 5).setValue(data.vehicle_id);
+      if (data.drive_date) sheet.getRange(i + 1, 6).setValue(data.drive_date);
+      if (data.start_time) sheet.getRange(i + 1, 7).setValue(data.start_time);
+      if (data.end_time) sheet.getRange(i + 1, 8).setValue(data.end_time);
+      if (data.note) sheet.getRange(i + 1, 9).setValue(data.note);
       return true;
     }
   }

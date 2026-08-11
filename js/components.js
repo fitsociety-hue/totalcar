@@ -154,16 +154,14 @@ const AppComponents = {
     const vehRequests = requests.filter(r => r.vehicle_id === activeVehicleId);
 
     const rowsHTML = vehRequests.map(req => {
-      const statusColor = req.approval_status === '승인' ? 'var(--status-emerald)' : 
-                          req.approval_status === '반려' ? 'var(--status-rose)' : 'var(--status-amber)';
       return `
         <tr>
           <td><span class="nobr"><strong>${req.drive_date}</strong></span><br><span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${req.start_time}~${req.end_time}</span></td>
           <td><span class="nobr">${req.applicant_name} <small style="color:var(--text-muted);">(${req.team})</small></span></td>
           <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
           <td>
-            <span class="badge nobr" style="background:${statusColor}20; color:${statusColor}; border:1px solid ${statusColor}40;">
-              ${req.approval_status}
+            <span class="badge nobr" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);">
+              확정 (우선권)
             </span>
           </td>
         </tr>
@@ -739,6 +737,68 @@ const AppComponents = {
             </tbody>
           </table>
         </div>
+      </div>
+    `;
+  },
+
+  /**
+   * 운행 시간/차량 변경 협의 모달 렌더러
+   */
+  renderTimeNegotiationModal(priorReq, targetVehicleId, driveDate, startTime, endTime, vehicles) {
+    const altVehiclesOptions = (vehicles || [])
+      .filter(v => v.vehicle_id !== targetVehicleId)
+      .map(v => `<option value="${v.vehicle_id}">🚘 ${v.vehicle_id} (${v.model})</option>`)
+      .join('');
+
+    return `
+      <div class="modal-body glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">💬 운행 시간 / 차량 변경 협의 요청</h3>
+          <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+        </div>
+
+        <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); padding:12px; border-radius:var(--radius-sm); margin-bottom:16px; font-size:0.85rem;">
+          <div style="font-weight:700; color:#FCA5A5; margin-bottom:4px;">⚠️ 선신청 우선권(확정) 등록 안내</div>
+          <div>선택하신 시간대(<strong>${startTime}~${endTime}</strong>)는 <strong>${priorReq.applicant_name}</strong> 님이 먼저 신청하여 <strong>우선권(확정)</strong>을 보유 중입니다.</div>
+          <div style="margin-top:6px; color:var(--text-muted); font-size:0.8rem;">기존 예약자와 시간대 조정 및 다른 차량 사용에 대한 협의 요청을 작성하실 수 있습니다.</div>
+        </div>
+
+        <form id="negotiation-submit-form">
+          <input type="hidden" name="target_vehicle_id" value="${targetVehicleId}">
+          <input type="hidden" name="drive_date" value="${driveDate}">
+
+          <div class="form-group">
+            <label>우선권 보유 예약자 정보</label>
+            <input type="text" class="form-control" value="${priorReq.applicant_name} (${priorReq.team || '-'}) | ${priorReq.start_time}~${priorReq.end_time}" readonly>
+          </div>
+
+          <div class="form-group">
+            <label>희망 변경/조정 시간대 (선택)</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <input type="time" name="suggested_start" class="form-control" value="${endTime}">
+              <input type="time" name="suggested_end" class="form-control" value="18:00">
+            </div>
+          </div>
+
+          ${altVehiclesOptions ? `
+          <div class="form-group">
+            <label>대체 사용 제안 차량 (선택)</label>
+            <select name="suggested_vehicle" class="form-control">
+              <option value="">-- 현재 차량 유지 --</option>
+              ${altVehiclesOptions}
+            </select>
+          </div>
+          ` : ''}
+
+          <div class="form-group">
+            <label>협의 제안 메시지 *</label>
+            <textarea name="message" class="form-control" rows="3" placeholder="예: 안녕하세요 김복지님, 10시~11시 사이 긴급 업무 수송으로 인해 시간대를 13시 이후로 변경 부탁드립니다." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="background:linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); color:#FFF;">
+            💬 협의 요청 메시지 전송
+          </button>
+        </form>
       </div>
     `;
   }
