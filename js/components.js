@@ -671,7 +671,7 @@ const AppComponents = {
               </tr>
             </thead>
             <tbody>
-              ${vehicles.map(v => {
+              ${vehicles.length > 0 ? vehicles.map(v => {
                 const ins = insurances.find(i => i.vehicle_id === v.vehicle_id) || {};
                 const dday = calculateDDay(ins.insurance_end || v.insurance_end);
                 return `
@@ -683,11 +683,11 @@ const AppComponents = {
                     <td><strong class="nobr">${Number(v.current_mileage).toLocaleString()} km</strong></td>
                     <td><span class="nobr" style="color:#3498db; font-weight:700;">${v.hipass_id || '미등록'}</span></td>
                     <td>
-                      <div class="nobr" style="font-weight:600;">${ins.company || 'DB손해보험'}</div>
-                      <div class="nobr" style="font-size:0.75rem; color:var(--accent-gold);">📞 ${ins.claim_phone || '1588-0100'}</div>
+                      <div class="nobr" style="font-weight:600;">${ins.company || '미등록'}</div>
+                      <div class="nobr" style="font-size:0.75rem; color:var(--accent-gold);">📞 ${ins.claim_phone || '미등록'}</div>
                     </td>
                     <td>
-                      <strong class="nobr" style="color:var(--status-emerald);">${ins.insurance_end || v.insurance_end || '2027-12-31'}</strong>
+                      <strong class="nobr" style="color:var(--status-emerald);">${ins.insurance_end || v.insurance_end || '-'}</strong>
                       <span class="badge nobr" style="margin-left:4px; font-size:0.7rem; background:rgba(46,204,113,0.15); color:#2ecc71;">${dday}</span>
                     </td>
                     <td><span class="badge nobr" style="background:rgba(229,169,60,0.15); color:var(--accent-gold);">${v.status}</span></td>
@@ -701,7 +701,13 @@ const AppComponents = {
                     </td>
                   </tr>
                 `;
-              }).join('')}
+              }).join('') : `
+                <tr>
+                  <td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">
+                    🚗 등록된 차량이 없습니다. ${isVehicleManager ? '상단의 [+ 차량 등록] 버튼을 클릭하여 첫 차량을 등록하세요.' : ''}
+                  </td>
+                </tr>
+              `}
             </tbody>
           </table>
         </div>

@@ -61,8 +61,8 @@ const AppStore = {
         console.warn('Session parse error:', e);
       }
 
-      const defaultUser = restoredUser || users[0];
-      const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '236루5818';
+      const defaultUser = restoredUser || null;
+      const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '';
       
       this.setState({
         data: validData,
@@ -165,7 +165,19 @@ const AppStore = {
    * 역할/사용자 변경 (테스트 및 퀵 세션용)
    */
   setCurrentUserByRole(position) {
-    const user = this.state.data.Users.find(u => u.position === position) || this.state.data.Users[0];
+    const users = this.state.data.Users || [];
+    let user = users.find(u => u.position === position);
+    if (!user) {
+      user = {
+        user_id: `DEMO-${Date.now()}`,
+        name: `테스트 (${position})`,
+        team: '복지사업팀',
+        position: position,
+        email: `demo_${Date.now()}@gde.or.kr`,
+        status: '재직',
+        created_at: new Date().toISOString().split('T')[0]
+      };
+    }
     this.setState({ currentUser: user });
     try {
       localStorage.setItem(APP_CONFIG.SESSION_USER_KEY, JSON.stringify(user));
@@ -176,7 +188,23 @@ const AppStore = {
    * 활성화된 차량 객체 가져오기
    */
   getActiveVehicle() {
-    return this.state.data.Vehicles.find(v => v.vehicle_id === this.state.activeVehicleId) || this.state.data.Vehicles[0];
+    const vehicles = this.state.data.Vehicles || [];
+    if (vehicles.length === 0) {
+      return {
+        vehicle_id: '미등록',
+        model: '등록된 차량 없음',
+        register_date: '',
+        insurance_start: '',
+        insurance_end: '',
+        status: '운행가능',
+        scrap_date: '',
+        current_mileage: 0,
+        hipass_id: '미등록',
+        hipass_card: '미등록',
+        note: ''
+      };
+    }
+    return vehicles.find(v => v.vehicle_id === this.state.activeVehicleId) || vehicles[0];
   },
 
   /**

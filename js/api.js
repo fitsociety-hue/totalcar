@@ -3,7 +3,7 @@
  */
 const AppAPI = {
   // LocalStorage Key
-  STORAGE_KEY: 'GANGDONG_TOTALCAR_DB_V1',
+  STORAGE_KEY: 'GANGDONG_TOTALCAR_DB_V3',
 
   /**
    * DB 초기화 (LocalStorage가 비어있으면 MOCK_DATA 세팅)

@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderApp(state) {
     const { currentUser, activeVehicleId, activeTab, viewMode, data } = state;
     const activeVehicle = AppStore.getActiveVehicle();
-    const insurance = data.Insurance.find(i => i.vehicle_id === activeVehicleId);
+    const insurance = (data.Insurance || []).find(i => i.vehicle_id === activeVehicleId) || {};
 
     // 뷰 모드 클래스 적용
     if (appWrapper) {
