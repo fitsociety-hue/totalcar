@@ -145,8 +145,11 @@ const AppAPI = {
           user_id: payload.user_id || `USER-${Date.now()}`,
           ...payload
         };
-        db.Users.push(newUser);
-        this.saveStorage(db);
+        const exists = db.Users.find(u => u.user_id === newUser.user_id || (newUser.email && u.email === newUser.email));
+        if (!exists) {
+          db.Users.push(newUser);
+          this.saveStorage(db);
+        }
         return newUser;
       }
 

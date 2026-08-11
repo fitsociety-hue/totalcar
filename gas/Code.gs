@@ -136,13 +136,14 @@ function addDriveRequest(ss, data) {
     reqId,
     data.team || '',
     data.applicant_id || '',
+    data.applicant_name || '',
     data.vehicle_id || '',
     data.drive_date || '',
     data.start_time || '',
     data.end_time || '',
     data.purpose || '',
-    '대기',
-    '',
+    data.approval_status || '승인',
+    data.approver_id || '',
     nowStr
   ]);
 
@@ -180,6 +181,7 @@ function addDriveLog(ss, data) {
     data.vehicle_id,
     data.date,
     data.driver_id,
+    data.driver_name || '',
     data.depart_time,
     data.arrival_time,
     data.destination,
@@ -190,7 +192,7 @@ function addDriveLog(ss, data) {
     data.companion || '',
     data.hipass_balance || 0,
     data.request_id || '',
-    '작성완료'
+    data.status || '작성완료'
   ]);
 
   // Vehicles 시트의 누적거리 업데이트 (7번째 열 = index 6)
@@ -271,6 +273,7 @@ function addAccidentLog(ss, data) {
     data.vehicle_id,
     data.date,
     data.driver_id,
+    data.driver_name || '',
     data.location,
     data.accident_role, // 가해 / 피해
     data.damage_person_yn, // 대인 여부 (Y/N)
@@ -307,8 +310,8 @@ function addUserAccount(ss, data) {
     data.password_hash || '1234',
     data.phone || '',
     data.email,
-    '재직',
-    new Date().toISOString().split('T')[0]
+    data.status || '재직',
+    data.created_at || new Date().toISOString().split('T')[0]
   ]);
 
   return { user_id: userId };

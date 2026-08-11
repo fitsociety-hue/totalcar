@@ -808,3 +808,47 @@ a {
   .notch { display: none; }
   .mobile-status-bar { display: none; }
 }
+
+/* 4. 운행일지 결재 보고서 인쇄/PDF 전용 스타일 */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  #role-test-bar,
+  .app-header,
+  .mobile-tab-bar,
+  .desktop-workspace,
+  .mobile-frame-container,
+  .modal-header,
+  .modal-close-btn,
+  .btn-primary,
+  .btn-secondary {
+    display: none !important;
+  }
+
+  .modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  .modal-body {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .printable-report {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

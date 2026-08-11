@@ -144,6 +144,9 @@ const AppStore = {
       localStorage.setItem(APP_CONFIG.SESSION_USER_KEY, JSON.stringify(newUser));
     } catch (e) {}
 
+    // GAS Web App 백엔드로 회원가입 데이터 전송
+    await AppAPI.request('createUserAccount', newUser);
+
     return { success: true, user: newUser };
   },
 
