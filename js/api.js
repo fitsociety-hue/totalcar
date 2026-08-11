@@ -172,16 +172,43 @@ const AppAPI = {
 
       case 'createVehicle': {
         console.log('🚗 [Vehicle Create API] Added vehicle:', payload.vehicle);
+        const vIdx = db.Vehicles.findIndex(v => v.vehicle_id === payload.vehicle.vehicle_id);
+        if (vIdx === -1) {
+          db.Vehicles.push(payload.vehicle);
+        }
+        if (payload.insurance) {
+          const iIdx = db.Insurance.findIndex(i => i.vehicle_id === payload.vehicle.vehicle_id);
+          if (iIdx === -1) {
+            db.Insurance.push(payload.insurance);
+          }
+        }
+        this.saveStorage(db);
         return { success: true };
       }
 
       case 'updateVehicle': {
         console.log('✏️ [Vehicle Update API] Updated vehicle:', payload.vehicle);
+        const vIdx = db.Vehicles.findIndex(v => v.vehicle_id === payload.vehicle.vehicle_id);
+        if (vIdx !== -1) {
+          db.Vehicles[vIdx] = { ...db.Vehicles[vIdx], ...payload.vehicle };
+        }
+        if (payload.insurance) {
+          const iIdx = db.Insurance.findIndex(i => i.vehicle_id === payload.vehicle.vehicle_id);
+          if (iIdx !== -1) {
+            db.Insurance[iIdx] = { ...db.Insurance[iIdx], ...payload.insurance };
+          } else {
+            db.Insurance.push(payload.insurance);
+          }
+        }
+        this.saveStorage(db);
         return { success: true };
       }
 
       case 'deleteVehicle': {
         console.log('🗑️ [Vehicle Delete API] Deleted vehicle ID:', payload.vehicle_id);
+        db.Vehicles = db.Vehicles.filter(v => v.vehicle_id !== payload.vehicle_id);
+        db.Insurance = db.Insurance.filter(i => i.vehicle_id !== payload.vehicle_id);
+        this.saveStorage(db);
         return { success: true };
       }
 

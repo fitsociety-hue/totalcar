@@ -193,14 +193,14 @@ function addDriveLog(ss, data) {
     '작성완료'
   ]);
 
-  // Vehicles 시트의 누적거리 업데이트
+  // Vehicles 시트의 누적거리 업데이트 (7번째 열 = index 6)
   var vehSheet = ss.getSheetByName('Vehicles');
   if (vehSheet) {
     var vehValues = vehSheet.getDataRange().getValues();
     for (var i = 1; i < vehValues.length; i++) {
       if (vehValues[i][0] === data.vehicle_id) {
-        if (Number(data.end_km) > Number(vehValues[i][7])) {
-          vehSheet.getRange(i + 1, 8).setValue(Number(data.end_km)); // current_mileage (8번째 컬럼)
+        if (Number(data.end_km) > Number(vehValues[i][6])) {
+          vehSheet.getRange(i + 1, 7).setValue(Number(data.end_km)); // current_mileage (7번째 컬럼)
         }
         break;
       }
@@ -401,15 +401,55 @@ function updateVehicleRecord(ss, data) {
   if (!vehSheet) return { success: false };
 
   var v = data.vehicle || {};
+  var ins = data.insurance || {};
+  
+  // 1. Vehicles 시트 수정
   var rows = vehSheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] === v.vehicle_id) {
       vehSheet.getRange(i + 1, 2).setValue(v.model);
+      if (v.register_date) vehSheet.getRange(i + 1, 3).setValue(v.register_date);
+      if (v.insurance_start) vehSheet.getRange(i + 1, 4).setValue(v.insurance_start);
+      if (v.insurance_end) vehSheet.getRange(i + 1, 5).setValue(v.insurance_end);
       vehSheet.getRange(i + 1, 6).setValue(v.status);
       vehSheet.getRange(i + 1, 7).setValue(v.current_mileage);
       vehSheet.getRange(i + 1, 8).setValue(v.hipass_id);
       vehSheet.getRange(i + 1, 9).setValue(v.hipass_card);
+      if (v.note !== undefined) vehSheet.getRange(i + 1, 10).setValue(v.note);
       break;
+    }
+  }
+
+  // 2. Insurance 시트 수정
+  var insSheet = ss.getSheetByName('Insurance');
+  if (insSheet) {
+    var insRows = insSheet.getDataRange().getValues();
+    var foundIns = false;
+    for (var j = 1; j < insRows.length; j++) {
+      if (insRows[j][0] === v.vehicle_id) {
+        insSheet.getRange(j + 1, 2).setValue(ins.company || '');
+        insSheet.getRange(j + 1, 3).setValue(ins.policy_number || '');
+        insSheet.getRange(j + 1, 4).setValue(ins.contractor || '강동어울림복지관');
+        insSheet.getRange(j + 1, 5).setValue(ins.claim_phone || '');
+        insSheet.getRange(j + 1, 6).setValue(ins.insurance_start || v.insurance_start || '');
+        insSheet.getRange(j + 1, 7).setValue(ins.insurance_end || v.insurance_end || '');
+        insSheet.getRange(j + 1, 8).setValue(ins.coverage || '');
+        foundIns = true;
+        break;
+      }
+    }
+    // 존재하지 않는 경우 신규 행 삽입
+    if (!foundIns && ins.company) {
+      insSheet.appendRow([
+        v.vehicle_id,
+        ins.company,
+        ins.policy_number || '',
+        ins.contractor || '강동어울림복지관',
+        ins.claim_phone || '',
+        ins.insurance_start || v.insurance_start || '',
+        ins.insurance_end || v.insurance_end || '',
+        ins.coverage || ''
+      ]);
     }
   }
 
@@ -424,11 +464,25 @@ function deleteVehicleRecord(ss, data) {
   if (!vehSheet) return { success: false };
 
   var vehicleId = data.vehicle_id;
+  
+  // 1. Vehicles 시트에서 삭제
   var rows = vehSheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] === vehicleId) {
       vehSheet.deleteRow(i + 1);
       break;
+    }
+  }
+
+  // 2. Insurance 시트에서 삭제
+  var insSheet = ss.getSheetByName('Insurance');
+  if (insSheet) {
+    var insRows = insSheet.getDataRange().getValues();
+    for (var j = 1; j < insRows.length; j++) {
+      if (insRows[j][0] === vehicleId) {
+        insSheet.deleteRow(j + 1);
+        break;
+      }
     }
   }
 

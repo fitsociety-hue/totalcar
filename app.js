@@ -195,12 +195,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div>
             <h2>${APP_CONFIG.ORGANIZATION_NAME} 차량 통합 관리 대시보드</h2>
             <div style="font-size:0.85rem; color:var(--text-muted);">
-              현재 접속자: <strong style="color:var(--accent-gold);">${currentUser ? currentUser.name : '김복지'}</strong> (${currentUser ? currentUser.position : '팀원'}) | 
+              현재 접속자: <strong style="color:var(--accent-gold);">${currentUser ? currentUser.name : '손님'}</strong> (${currentUser ? currentUser.position : '비로그인'}) | 
               선택 차량: <strong style="color:var(--status-emerald);">${activeVehicle.vehicle_id}</strong> (${activeVehicle.model})
             </div>
           </div>
           <div style="display:flex; gap:10px;">
-            <button id="btn-desktop-add-veh" class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;">+ 신규 차량 등록 (9월 3호차)</button>
+            ${currentUser && ['차량관리담당자', '사무국장', '관장'].includes(currentUser.position) ? `
+            <button id="btn-desktop-add-veh" class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;">+ 차량 등록</button>
+            ` : ''}
             <button id="btn-desktop-request" class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;">+ 운행 신청</button>
             <button id="btn-desktop-report" class="btn-secondary" style="width:auto; padding:8px 14px; font-size:0.85rem;">📋 월별보고서 인쇄/PDF</button>
           </div>

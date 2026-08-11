@@ -13,9 +13,12 @@ const AppComponents = {
       Object.keys(APP_CONFIG.VEHICLE_STATUS).find(k => APP_CONFIG.VEHICLE_STATUS[k].code === vehicle.status) || 'AVAILABLE'
     ];
 
+    const currentUser = AppStore.state.currentUser;
+    const isVehicleManager = currentUser && ['차량관리담당자', '사무국장', '관장'].includes(currentUser.position);
+
     const vehicleOptionsHTML = allVehicles.map(v => 
       `<option value="${v.vehicle_id}" ${v.vehicle_id === vehicle.vehicle_id ? 'selected' : ''}>🚘 ${v.vehicle_id} (${v.model})</option>`
-    ).join('') + `<option value="__ADD_NEW__">➕ 신규 차량 등록 (9월 3호차)</option>`;
+    ).join('') + (isVehicleManager ? `<option value="__ADD_NEW__">➕ 차량 등록</option>` : '');
 
     // D-Day 계산
     let ddayText = '';
@@ -534,7 +537,7 @@ const AppComponents = {
     return `
       <div class="modal-card" style="max-width:560px;">
         <div class="modal-header">
-          <h3>${isEdit ? '✏️ 차량 & 하이패스/보험 정보 수정' : '🚗 신규 차량 & 하이패스/보험 등록 (9월 3호차)'}</h3>
+          <h3>${isEdit ? '✏️ 차량 & 하이패스/보험 정보 수정' : '🚗 차량 & 하이패스/보험 등록'}</h3>
           <button class="modal-close-btn">&times;</button>
         </div>
         <form id="form-vehicle-manage">
@@ -638,15 +641,20 @@ const AppComponents = {
       return `만료 D+${Math.abs(diff)}일`;
     };
 
+    const currentUser = AppStore.state.currentUser;
+    const isVehicleManager = currentUser && ['차량관리담당자', '사무국장', '관장'].includes(currentUser.position);
+
     return `
       <div class="glass-panel" style="padding:16px; margin-top:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;">
             <span>🚗</span> 복지관 차량 / 하이패스 / 보험 통합 관리자
           </h3>
+          ${isVehicleManager ? `
           <button id="btn-open-add-vehicle-modal" class="btn-primary" style="padding:6px 12px; font-size:0.8rem; width:auto;">
-            + 신규 차량 등록 (9월 3호차)
+            + 차량 등록
           </button>
+          ` : ''}
         </div>
 
         <div class="custom-table-container">
@@ -684,10 +692,12 @@ const AppComponents = {
                     </td>
                     <td><span class="badge nobr" style="background:rgba(229,169,60,0.15); color:var(--accent-gold);">${v.status}</span></td>
                     <td>
+                      ${isVehicleManager ? `
                       <div style="display:flex; gap:4px;" class="nobr">
                         <button class="btn-edit-vehicle btn-secondary" data-id="${v.vehicle_id}" style="padding:2px 6px; font-size:0.7rem; width:auto;">수정</button>
                         <button class="btn-delete-vehicle btn-secondary" data-id="${v.vehicle_id}" style="padding:2px 6px; font-size:0.7rem; width:auto; color:var(--status-rose);">삭제</button>
                       </div>
+                      ` : '<span style="color:var(--text-muted); font-size:0.75rem;">권한 없음</span>'}
                     </td>
                   </tr>
                 `;

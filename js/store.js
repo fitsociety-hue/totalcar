@@ -155,9 +155,7 @@ const AppStore = {
       localStorage.removeItem(APP_CONFIG.SESSION_USER_KEY);
     } catch (e) {}
     
-    // 기본 첫 번째 사용자 계정으로 복귀 또는 null 세팅
-    const defaultUser = (this.state.data.Users && this.state.data.Users[0]) || null;
-    this.setState({ currentUser: defaultUser });
+    this.setState({ currentUser: null });
   },
 
   /**
@@ -210,6 +208,12 @@ const AppStore = {
    * 차량, 하이패스, 보험 통합 등록
    */
   async createVehicle(vehicleData, insuranceData) {
+    const user = this.state.currentUser;
+    const hasAccess = user && ['차량관리담당자', '사무국장', '관장'].includes(user.position);
+    if (!hasAccess) {
+      return { success: false, message: '권한이 없습니다. 차량관리담당자만 등록 가능합니다.' };
+    }
+
     const vehicles = [...(this.state.data.Vehicles || [])];
     const insurances = [...(this.state.data.Insurance || [])];
 
@@ -262,6 +266,12 @@ const AppStore = {
    * 차량, 하이패스, 보험 정보 수정
    */
   async updateVehicle(vehicleId, vehicleData, insuranceData) {
+    const user = this.state.currentUser;
+    const hasAccess = user && ['차량관리담당자', '사무국장', '관장'].includes(user.position);
+    if (!hasAccess) {
+      return { success: false, message: '권한이 없습니다. 차량관리담당자만 수정 가능합니다.' };
+    }
+
     const vehicles = [...(this.state.data.Vehicles || [])];
     const insurances = [...(this.state.data.Insurance || [])];
 
@@ -289,6 +299,12 @@ const AppStore = {
    * 차량 삭제
    */
   async deleteVehicle(vehicleId) {
+    const user = this.state.currentUser;
+    const hasAccess = user && ['차량관리담당자', '사무국장', '관장'].includes(user.position);
+    if (!hasAccess) {
+      return { success: false, message: '권한이 없습니다. 차량관리담당자만 삭제 가능합니다.' };
+    }
+
     const vehicles = (this.state.data.Vehicles || []).filter(v => v.vehicle_id !== vehicleId);
     const insurances = (this.state.data.Insurance || []).filter(i => i.vehicle_id !== vehicleId);
 
