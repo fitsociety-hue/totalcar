@@ -36,15 +36,20 @@ const AppAPI = {
   async request(action, payload = {}) {
     const requestData = { action, ...payload };
     
-    // 1차 시도: GAS Web App POST fetch
+    // 1차 시도: GAS Web App POST fetch (3.5초 타임아웃 방어)
     if (APP_CONFIG.GAS_WEB_APP_URL && !APP_CONFIG.GAS_WEB_APP_URL.includes('YOUR_GAS')) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
         const response = await fetch(APP_CONFIG.GAS_WEB_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify(requestData),
+          signal: controller.signal
         });
         
+        clearTimeout(timeoutId);
         if (response.ok) {
           const resJson = await response.json();
           if (resJson.status === 'success') {
@@ -52,7 +57,7 @@ const AppAPI = {
           }
         }
       } catch (err) {
-        console.warn('GAS Endpoint fetch error, switching to LocalStorage mode:', err);
+        console.warn('GAS Endpoint fetch timed out or failed, switching to LocalStorage mode:', err);
       }
     }
 

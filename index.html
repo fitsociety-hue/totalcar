@@ -19,7 +19,7 @@
     <div style="display:flex; align-items:center; gap:8px;">
       <span style="color:var(--accent-gold); font-weight:700;">강동어울림복지관</span>
       <span style="color:var(--text-dim);" class="nobr">| 스마트 차량통합관리 v1.1</span>
-      <span id="header-user-badge" style="color:var(--text-main); font-weight:600; margin-left:10px;" class="nobr">👤 접속: <strong id="header-user-name" style="color:var(--accent-gold);">김복지</strong> (<span id="header-user-role">팀원</span>)</span>
+      <span id="header-user-badge" style="color:var(--text-main); font-weight:600; margin-left:10px;" class="nobr">👤 접속: <strong id="header-user-name" style="color:var(--accent-gold);">손님</strong> (<span id="header-user-role">비로그인</span>)</span>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
       <button id="btn-header-login" class="btn-secondary" style="padding:3px 10px; font-size:0.75rem; width:auto; border-color:var(--accent-gold); color:var(--accent-gold);">🔑 로그인</button>
@@ -36,9 +36,10 @@
 
       <label for="role-selector" style="color:var(--text-muted);" class="nobr">⚡ 퀵 권한 전환:</label>
       <select id="role-selector">
+        <option value="" selected disabled>⚡ 퀵 권한 전환 (선택)</option>
         <option value="팀원">직원 (팀원)</option>
         <option value="팀장">직원 (팀장)</option>
-        <option value="차량관리담당자" selected>차량관리 담당자</option>
+        <option value="차량관리담당자">차량관리 담당자</option>
         <option value="사무국장">사무국장 (중간결재)</option>
         <option value="관장">관장 (최종결재)</option>
       </select>

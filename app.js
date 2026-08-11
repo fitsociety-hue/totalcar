@@ -2,13 +2,10 @@
  * 강동어울림복지관 차량통합관리 - 메인 애플리케이션 수석 컨트롤러 (app.js)
  */
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   console.log('🚗 Initializing Gangdong Eoullim Vehicle Integrated App...');
 
-  // 1. 초기 데이터 및 상태 로드
-  await AppStore.loadInitialData();
-
-  // 2. DOM 요소 바인딩
+  // 1. DOM 요소 바인딩
   const roleSelect = document.getElementById('role-selector');
   const splashScreen = document.getElementById('splash-screen');
   const mobileContent = document.getElementById('mobile-content');
@@ -27,22 +24,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }, 1200);
 
-  // 3. 상태 변경 구독 및 뷰 갱신
+  // 2. 상태 변경 구독 및 뷰 갱신
   AppStore.subscribe((state) => {
     renderApp(state);
   });
 
-  // 초기 1회 렌더링
-  renderApp(AppStore.state);
+  // 3. 이벤트 리스너 즉시 등록 (Non-blocking: 즉시 반응)
 
-  // 4. 이벤트 리스너 등록
-
-  // 4.1 역할 변경 스위처 (테스트용)
+  // 3.1 역할 변경 스위처 (테스트용)
   if (roleSelect) {
     roleSelect.addEventListener('change', (e) => {
       const position = e.target.value;
-      AppStore.setCurrentUserByRole(position);
-      showToast(`사용자 권한이 [${position}] (으)로 전환되었습니다.`);
+      if (position) {
+        AppStore.setCurrentUserByRole(position);
+        showToast(`사용자 권한이 [${position}] (으)로 전환되었습니다.`);
+      }
     });
   }
 
@@ -56,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnHeaderLogout = document.getElementById('btn-header-logout');
   if (btnHeaderLogout) btnHeaderLogout.addEventListener('click', () => {
     AppStore.logout();
+    if (roleSelect) roleSelect.value = '';
     showToast('성공적으로 로그아웃 되었습니다.');
   });
 
@@ -77,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 4.2 모바일 하단 탭바 전환
+  // 3.2 모바일 하단 탭바 전환
   tabItems.forEach(tab => {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.tab;
@@ -87,10 +84,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 4.3 모달 닫기버튼 글로벌 바인딩
+  // 3.3 모달 닫기버튼 글로벌 바인딩
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-close-btn') || e.target === modalOverlay) {
       closeModal();
+    }
+  });
+
+  // 초기 1회 렌더링 (즉시 렌더링)
+  renderApp(AppStore.state);
+
+  // 4. 백그라운드 DB 데이터 비동기 로드 (Non-blocking)
+  AppStore.loadInitialData().then(() => {
+    if (roleSelect && AppStore.state.currentUser) {
+      roleSelect.value = AppStore.state.currentUser.position || '';
     }
   });
 
