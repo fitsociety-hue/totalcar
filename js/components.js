@@ -490,7 +490,7 @@ const AppComponents = {
 
           <div class="form-group">
             <label>비밀번호 *</label>
-            <input type="password" name="password" class="form-control" placeholder="비밀번호 (기본: 1234)" required value="1234">
+            <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required>
           </div>
 
           <div id="login-error-msg" style="display:none; color:var(--status-rose); font-size:0.8rem; margin-bottom:12px; font-weight:600;"></div>
@@ -501,18 +501,6 @@ const AppComponents = {
         <div style="text-align:center; border-top:1px dashed var(--border-glass); padding-top:14px; margin-top:8px;">
           <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">아직 계정이 없으신가요?</div>
           <button id="btn-switch-to-signup" class="btn-secondary" style="padding:8px; font-size:0.85rem;">⚡ 신규 회원가입 신청</button>
-        </div>
-
-        <!-- 1초 빠른 데모 계정 선택 바 -->
-        <div style="margin-top:16px; background:rgba(229,169,60,0.08); border:1px solid var(--border-glass-strong); padding:12px; border-radius:var(--radius-sm);">
-          <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:700; margin-bottom:6px;">🚀 테스트용 1초 빠른 로그인 선택</div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px;">
-            <button class="btn-quick-demo-login btn-secondary" data-role="팀원" style="padding:4px 8px; font-size:0.72rem; width:auto;">김복지 (팀원)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="팀장" style="padding:4px 8px; font-size:0.72rem; width:auto;">이팀장 (팀장)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="차량관리담당자" style="padding:4px 8px; font-size:0.72rem; width:auto;">박차량 (담당자)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="사무국장" style="padding:4px 8px; font-size:0.72rem; width:auto;">최국장 (국장)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="관장" style="padding:4px 8px; font-size:0.72rem; width:auto;">정관장 (관장)</button>
-          </div>
         </div>
       </div>
     `;
