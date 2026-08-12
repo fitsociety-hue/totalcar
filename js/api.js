@@ -15,7 +15,17 @@ const AppAPI = {
       return MOCK_DATA;
     }
     try {
-      return JSON.parse(existing);
+      const parsed = JSON.parse(existing);
+      // 필수 배열 키 유효성 방어 (누락 시 MOCK_DATA의 기본값 복원)
+      const keys = ['Users', 'Vehicles', 'DriveLogs', 'DriveRequests', 'Fuel', 'Maintenance', 'Accidents', 'Insurance'];
+      keys.forEach(k => {
+        if (!parsed[k] || !Array.isArray(parsed[k]) || parsed[k].length === 0) {
+          if (MOCK_DATA[k] && Array.isArray(MOCK_DATA[k])) {
+            parsed[k] = MOCK_DATA[k];
+          }
+        }
+      });
+      return parsed;
     } catch (e) {
       console.error('LocalStorage parse error, resetting mock data:', e);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(MOCK_DATA));
