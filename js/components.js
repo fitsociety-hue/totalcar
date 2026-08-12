@@ -381,17 +381,7 @@ const AppComponents = {
           <button id="btn-switch-to-signup" class="btn-secondary" style="padding:8px; font-size:0.85rem;">⚡ 신규 회원가입 신청</button>
         </div>
 
-        <!-- 1초 빠른 데모 계정 선택 바 -->
-        <div style="margin-top:16px; background:rgba(229,169,60,0.08); border:1px solid var(--border-glass-strong); padding:12px; border-radius:var(--radius-sm);">
-          <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:700; margin-bottom:6px;">🚀 테스트용 1초 빠른 로그인 선택</div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px;">
-            <button class="btn-quick-demo-login btn-secondary" data-role="팀원" style="padding:4px 8px; font-size:0.72rem; width:auto;">김복지 (팀원)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="팀장" style="padding:4px 8px; font-size:0.72rem; width:auto;">이팀장 (팀장)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="차량관리담당자" style="padding:4px 8px; font-size:0.72rem; width:auto;">박차량 (담당자)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="사무국장" style="padding:4px 8px; font-size:0.72rem; width:auto;">최국장 (국장)</button>
-            <button class="btn-quick-demo-login btn-secondary" data-role="관장" style="padding:4px 8px; font-size:0.72rem; width:auto;">정관장 (관장)</button>
-          </div>
-        </div>
+
       </div>
     `;
   },

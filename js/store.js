@@ -80,7 +80,28 @@ const AppStore = {
    * 로그인 처리
    */
   login(identity, password) {
-    const users = this.state.data.Users || [];
+    // state.data.Users와 LocalStorage Users를 병합하여 검색 (회원가입 후 새로고침 없이도 로그인 가능)
+    let users = this.state.data.Users || [];
+    try {
+      const stored = localStorage.getItem(AppAPI.STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed.Users)) {
+          // LocalStorage의 Users를 병합 (중복 제거)
+          const stateIds = new Set(users.map(u => u.user_id));
+          const stateEmails = new Set(users.filter(u => u.email).map(u => u.email.toLowerCase()));
+          parsed.Users.forEach(u => {
+            if (!stateIds.has(u.user_id) && !(u.email && stateEmails.has(u.email.toLowerCase()))) {
+              users = [...users, u];
+            }
+          });
+          // state.data도 최신 LocalStorage 데이터로 동기화
+          this.state.data = { ...this.state.data, Users: users };
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage Users sync error:', e);
+    }
     const searchKey = identity.trim().toLowerCase();
     
     // 이메일, user_id, 성명으로 조회

@@ -811,15 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSwitchSignup.addEventListener('click', openSignupModal);
     }
 
-    // 퀵 데모 로그인 리스너
-    document.querySelectorAll('.btn-quick-demo-login').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const position = btn.dataset.role;
-        AppStore.setCurrentUserByRole(position);
-        closeModal();
-        showToast(`[${position}] 계정으로 1초 빠른 로그인 되었습니다.`);
-      });
-    });
+
+
 
     if (form) {
       form.addEventListener('submit', (e) => {
