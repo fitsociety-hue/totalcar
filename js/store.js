@@ -404,6 +404,21 @@ const AppStore = {
   },
 
   /**
+   * 운행 신청 삭제 (취소)
+   */
+  async deleteDriveRequest(requestId) {
+    const updatedReqs = (this.state.data.DriveRequests || []).filter(r => r.request_id !== requestId);
+    const updatedData = { ...this.state.data, DriveRequests: updatedReqs };
+
+    AppAPI.saveStorage(updatedData);
+    this.setState({ data: updatedData });
+
+    // 백엔드 삭제 전송
+    await AppAPI.request('deleteDriveRequest', { request_id: requestId });
+    return true;
+  },
+
+  /**
    * 운행 시간 / 차량 변경 협의 요청 전송
    */
   async sendTimeNegotiationRequest(payload) {

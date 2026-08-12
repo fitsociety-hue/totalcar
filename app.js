@@ -444,6 +444,31 @@ document.addEventListener('DOMContentLoaded', () => {
         AppStore.setState({ bookingFilterMode: 'all' });
       });
     }
+
+    // 예약 현황 수정 / 삭제 (취소) 이벤트 위임 핸들러
+    document.addEventListener('click', async (e) => {
+      const editBtn = e.target.closest('.btn-edit-request');
+      if (editBtn) {
+        const reqId = editBtn.dataset.id;
+        const reqToEdit = (AppStore.state.data.DriveRequests || []).find(r => r.request_id === reqId);
+        if (reqToEdit) {
+          openRequestModal(reqToEdit);
+        }
+        return;
+      }
+
+      const deleteBtn = e.target.closest('.btn-delete-request');
+      if (deleteBtn) {
+        const reqId = deleteBtn.dataset.id;
+        const reqToDelete = (AppStore.state.data.DriveRequests || []).find(r => r.request_id === reqId);
+        if (reqToDelete) {
+          if (confirm(`🗑️ [${reqToDelete.vehicle_id}] (${reqToDelete.drive_date} ${reqToDelete.start_time}~${reqToDelete.end_time}) 차량 운행 신청을 삭제(취소)하시겠습니까?`)) {
+            await AppStore.deleteDriveRequest(reqId);
+            showToast(`🗑️ 차량 운행 신청이 취소/삭제되었습니다.`);
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -536,8 +561,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function openRequestModal() {
-    const activeVehId = AppStore.state.activeVehicleId;
+  function openRequestModal(requestToEdit = null) {
+    const activeVehId = requestToEdit ? requestToEdit.vehicle_id : AppStore.state.activeVehicleId;
     const user = AppStore.state.currentUser || { name: '김복지', team: '복지사업팀' };
     const vehicles = AppStore.state.data.Vehicles || [];
 
@@ -547,27 +572,35 @@ document.addEventListener('DOMContentLoaded', () => {
       return `<option value="${vid}" ${vid === activeVehId ? 'selected' : ''}>🚘 ${vid} (${vmodel})</option>`;
     }).join('');
 
+    const defaultDate = requestToEdit ? requestToEdit.drive_date : new Date().toISOString().split('T')[0];
+    const defaultStart = requestToEdit ? requestToEdit.start_time : '09:00';
+    const defaultEnd = requestToEdit ? requestToEdit.end_time : '12:00';
+    const defaultDriver = requestToEdit ? (requestToEdit.driver_name || requestToEdit.applicant_name) : user.name;
+    const defaultCompanion = requestToEdit ? (requestToEdit.companion || '') : '';
+    const defaultPurpose = requestToEdit ? (requestToEdit.purpose || '') : '';
+
     modalOverlay.innerHTML = `
       <div class="modal-body glass-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
-          <h3 style="font-size:1.1rem; color:var(--accent-gold);">🚗 차량 운행 신청</h3>
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">${requestToEdit ? '✏️ 차량 운행 신청 수정' : '🚗 차량 운행 신청'}</h3>
           <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
         </div>
 
         <form id="request-submit-form">
+          <input type="hidden" name="request_id" value="${requestToEdit ? requestToEdit.request_id : ''}">
           <div class="form-group">
             <label>신청자 / 팀명</label>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              <input type="text" class="form-control" value="${user.name}" readonly>
-              <input type="text" class="form-control" value="${user.team}" readonly>
+              <input type="text" class="form-control" value="${requestToEdit ? requestToEdit.applicant_name : user.name}" readonly>
+              <input type="text" class="form-control" value="${requestToEdit ? (requestToEdit.team || user.team) : user.team}" readonly>
             </div>
           </div>
 
           <div class="form-group">
             <label>운전자 성명 * / 동승자 (선택)</label>
             <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:8px;">
-              <input type="text" name="driver_name" class="form-control" value="${user.name}" placeholder="운전자 성함" required>
-              <input type="text" name="companion" class="form-control" placeholder="예: 김용필 외 2명 또는 이팀장, 박차량">
+              <input type="text" name="driver_name" class="form-control" value="${defaultDriver}" placeholder="운전자 성함" required>
+              <input type="text" name="companion" class="form-control" value="${defaultCompanion}" placeholder="예: 김용필 외 2명 또는 이팀장, 박차량">
             </div>
           </div>
 
@@ -580,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <div class="form-group">
             <label>📅 운행 예정일 *</label>
-            <input type="date" name="drive_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+            <input type="date" name="drive_date" class="form-control" value="${defaultDate}" required>
           </div>
 
           <div class="form-group">
@@ -588,25 +621,25 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
               <div style="position:relative; display:flex; align-items:center;">
                 <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.85rem;">🕒 시작</span>
-                <input type="time" name="start_time" class="form-control" value="09:00" style="padding-left:60px;" required>
+                <input type="time" name="start_time" class="form-control" value="${defaultStart}" style="padding-left:60px;" required>
               </div>
               <div style="position:relative; display:flex; align-items:center;">
                 <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.85rem;">🕒 종료</span>
-                <input type="time" name="end_time" class="form-control" value="12:00" style="padding-left:60px;" required>
+                <input type="time" name="end_time" class="form-control" value="${defaultEnd}" style="padding-left:60px;" required>
               </div>
             </div>
           </div>
 
           <div class="form-group">
             <label>운행 목적 *</label>
-            <textarea name="purpose" class="form-control" rows="2" placeholder="운행 목적을 입력하십시오." required></textarea>
+            <textarea name="purpose" class="form-control" rows="2" placeholder="운행 목적을 입력하십시오." required>${defaultPurpose}</textarea>
           </div>
 
           <div id="conflict-warning" style="display:none; color:var(--status-rose); font-size:0.8rem; margin-bottom:10px; font-weight:700;">
             ⚠️ 입력하신 시간대에 해당 차량의 기존 승인/대기 예약이 존재합니다! (중복 예약 불가능)
           </div>
 
-          <button type="submit" class="btn-primary">운행 신청 제출</button>
+          <button type="submit" class="btn-primary">${requestToEdit ? '운행 신청 수정 저장' : '운행 신청 제출'}</button>
         </form>
       </div>
     `;
@@ -617,54 +650,70 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
+      const reqId = formData.get('request_id');
       const vehicle_id = formData.get('vehicle_id');
       const drive_date = formData.get('drive_date');
       const start_time = formData.get('start_time');
       const end_time = formData.get('end_time');
 
-      // 실시간 중복 체크
-      const priorReq = AppStore.checkBookingConflict(vehicle_id, drive_date, start_time, end_time);
+      // 실시간 중복 체크 (수정 시 본인 ID 제외)
+      const priorReq = AppStore.checkBookingConflict(vehicle_id, drive_date, start_time, end_time, reqId || null);
       if (priorReq) {
         openTimeNegotiationModal(priorReq, vehicle_id, drive_date, start_time, end_time);
         return;
       }
 
-      setFormSavingState(form, true, '운행 신청 저장 중...');
+      setFormSavingState(form, true, reqId ? '운행 신청 수정 중...' : '운행 신청 저장 중...');
       try {
-        const newReq = {
-          request_id: `REQ-${Date.now()}`,
-          applicant_id: user.user_id || '1001',
-          applicant_name: user.name,
-          team: user.team || '복지사업팀',
-          driver_name: formData.get('driver_name') || user.name,
-          companion: formData.get('companion') || '',
-          vehicle_id,
-          drive_date,
-          start_time,
-          end_time,
-          purpose: formData.get('purpose'),
-          approval_status: '확정(우선권)',
-          approver_id: '자동확정',
-          created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
-        };
+        if (reqId) {
+          // [수정] 기존 신청 업데이트
+          const reqData = {
+            request_id: reqId,
+            driver_name: formData.get('driver_name'),
+            companion: formData.get('companion') || '',
+            vehicle_id,
+            drive_date,
+            start_time,
+            end_time,
+            purpose: formData.get('purpose')
+          };
+          await AppAPI.request('updateDriveRequest', reqData);
+          await AppStore.loadInitialData();
+          closeModal();
+          showToast(`✏️ [${vehicle_id}] 차량 운행 신청 정보가 수정되었습니다.`);
+        } else {
+          // [신규] 새로운 신청 생성
+          const newReq = {
+            request_id: `REQ-${Date.now()}`,
+            applicant_id: user.user_id || '1001',
+            applicant_name: user.name,
+            team: user.team || '복지사업팀',
+            driver_name: formData.get('driver_name') || user.name,
+            companion: formData.get('companion') || '',
+            vehicle_id,
+            drive_date,
+            start_time,
+            end_time,
+            purpose: formData.get('purpose'),
+            approval_status: '확정(우선권)',
+            approver_id: '자동확정',
+            created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+          };
 
-        // 1. 로컬 store의 DriveRequests 및 LocalStorage 즉시 반응형 동기화
-        const currentReqs = [newReq, ...(AppStore.state.data.DriveRequests || [])];
-        const updatedData = { ...AppStore.state.data, DriveRequests: currentReqs };
-        AppAPI.saveStorage(updatedData);
-        AppStore.setState({
-          data: updatedData,
-          activeVehicleId: vehicle_id,
-          bookingFilterMode: 'all'
-        });
+          const currentReqs = AppStore.deduplicateDriveRequests([newReq, ...(AppStore.state.data.DriveRequests || [])]);
+          const updatedData = { ...AppStore.state.data, DriveRequests: currentReqs };
+          AppAPI.saveStorage(updatedData);
+          AppStore.setState({
+            data: updatedData,
+            activeVehicleId: vehicle_id,
+            bookingFilterMode: 'all'
+          });
 
-        // 2. 백엔드 GAS 구글 스프레드시트 기록 전송
-        await AppAPI.request('createDriveRequest', newReq);
-
-        // 3. 백엔드 데이터 최신화
-        await AppStore.loadInitialData();
-        closeModal();
-        showToast(`🎉 [${vehicle_id}] 차량 운행 신청이 성공적으로 완료되었습니다.`);
+          await AppAPI.request('createDriveRequest', newReq);
+          await AppStore.loadInitialData();
+          closeModal();
+          showToast(`🎉 [${vehicle_id}] 차량 운행 신청이 성공적으로 완료되었습니다.`);
+        }
       } finally {
         setFormSavingState(form, false);
       }

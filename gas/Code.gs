@@ -32,6 +32,14 @@ function doPost(e) {
         resultData = updateApprovalStatus(ss, contents);
         break;
 
+      case 'updateDriveRequest':
+        resultData = updateDriveRequest(ss, contents);
+        break;
+
+      case 'deleteDriveRequest':
+        resultData = deleteDriveRequest(ss, contents);
+        break;
+
       case 'createDriveLog':
         resultData = addDriveLog(ss, contents);
         break;
@@ -218,24 +226,44 @@ function addDriveRequest(ss, data) {
 }
 
 /**
- * 운행 신청 시간/차량 변경 (시간 협의 수락 시)
+ * 운행 신청 데이터 수정
  */
-function updateDriveRequestTime(ss, data) {
+function updateDriveRequest(ss, data) {
   var sheet = ss.getSheetByName('DriveRequests');
-  if (!sheet) return false;
+  if (!sheet) return { status: 'error', message: '시트를 찾을 수 없습니다.' };
 
   var values = sheet.getDataRange().getValues();
   for (var i = 1; i < values.length; i++) {
-    if (values[i][0] === data.request_id) {
-      if (data.vehicle_id) sheet.getRange(i + 1, 5).setValue(data.vehicle_id);
-      if (data.drive_date) sheet.getRange(i + 1, 6).setValue(data.drive_date);
-      if (data.start_time) sheet.getRange(i + 1, 7).setValue(data.start_time);
-      if (data.end_time) sheet.getRange(i + 1, 8).setValue(data.end_time);
-      if (data.note) sheet.getRange(i + 1, 9).setValue(data.note);
-      return true;
+    if (String(values[i][0]) === String(data.request_id)) {
+      var rowNum = i + 1;
+      if (data.driver_name) sheet.getRange(rowNum, 5).setValue(data.driver_name);
+      if (data.companion !== undefined) sheet.getRange(rowNum, 6).setValue(data.companion);
+      if (data.vehicle_id) sheet.getRange(rowNum, 7).setValue(data.vehicle_id);
+      if (data.drive_date) sheet.getRange(rowNum, 8).setValue(data.drive_date);
+      if (data.start_time) sheet.getRange(rowNum, 9).setValue(data.start_time);
+      if (data.end_time) sheet.getRange(rowNum, 10).setValue(data.end_time);
+      if (data.purpose) sheet.getRange(rowNum, 11).setValue(data.purpose);
+      return { status: 'success', request_id: data.request_id };
     }
   }
-  return false;
+  return { status: 'error', message: '해당 운행 신청건을 찾을 수 없습니다.' };
+}
+
+/**
+ * 운행 신청 데이터 삭제 (취소)
+ */
+function deleteDriveRequest(ss, data) {
+  var sheet = ss.getSheetByName('DriveRequests');
+  if (!sheet) return { status: 'error', message: '시트를 찾을 수 없습니다.' };
+
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(data.request_id)) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', request_id: data.request_id };
+    }
+  }
+  return { status: 'error', message: '삭제할 운행 신청건을 찾을 수 없습니다.' };
 }
 
 /**

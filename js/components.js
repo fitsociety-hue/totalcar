@@ -273,11 +273,17 @@ const AppComponents = {
             <span class="nobr">👤 ${req.driver_name || req.applicant_name} <small style="color:var(--text-muted);">(${req.team || ''})</small></span>
             ${req.companion ? `<br><span style="font-size:0.72rem; color:var(--status-emerald);" class="nobr">👥 동승: ${req.companion}</span>` : ''}
           </td>
-          <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
+          <td style="max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
           <td>
             <span class="badge nobr" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);">
               ${req.approval_status || '확정'}
             </span>
+          </td>
+          <td>
+            <div style="display:flex; gap:4px;" class="nobr">
+              <button class="btn-edit-request btn-secondary" data-id="${req.request_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:var(--accent-gold); color:var(--accent-gold);" title="운행 신청 정보 수정">✏️ 수정</button>
+              <button class="btn-delete-request btn-secondary" data-id="${req.request_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:rgba(239,68,68,0.4); color:var(--status-rose);" title="운행 신청 취소/삭제">🗑️ 취소</button>
+            </div>
           </td>
         </tr>
       `;
@@ -300,15 +306,16 @@ const AppComponents = {
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width:24%;">예정일시</th>
-                <th style="width:20%;">차량번호</th>
-                <th style="width:22%;">신청자</th>
-                <th style="width:22%;">운행목적</th>
-                <th style="width:12%;">상태</th>
+                <th style="width:22%;">예정일시</th>
+                <th style="width:18%;">차량번호</th>
+                <th style="width:20%;">신청자/동승자</th>
+                <th style="width:18%;">운행목적</th>
+                <th style="width:10%;">상태</th>
+                <th style="width:12%;">관리</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHTML || '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:20px;">예약된 운행 건이 없습니다.</td></tr>'}
+              ${rowsHTML || '<tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:20px;">예약된 운행 건이 없습니다.</td></tr>'}
             </tbody>
           </table>
         </div>

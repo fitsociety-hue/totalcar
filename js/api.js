@@ -102,12 +102,31 @@ const AppAPI = {
         const newReq = {
           request_id: `REQ-${Date.now()}`,
           created_at: new Date().toLocaleString(),
-          approval_status: '대기',
+          approval_status: '확정(우선권)',
           ...payload
         };
         db.DriveRequests.unshift(newReq);
         this.saveStorage(db);
         return newReq;
+      }
+
+      case 'updateDriveRequest': {
+        const reqIndex = (db.DriveRequests || []).findIndex(r => r.request_id === payload.request_id);
+        if (reqIndex !== -1) {
+          db.DriveRequests[reqIndex] = {
+            ...db.DriveRequests[reqIndex],
+            ...payload
+          };
+          this.saveStorage(db);
+          return db.DriveRequests[reqIndex];
+        }
+        return null;
+      }
+
+      case 'deleteDriveRequest': {
+        db.DriveRequests = (db.DriveRequests || []).filter(r => r.request_id !== payload.request_id);
+        this.saveStorage(db);
+        return { success: true, request_id: payload.request_id };
       }
 
       case 'approveDriveRequest': {
