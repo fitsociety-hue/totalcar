@@ -560,18 +560,19 @@ a {
 .modal-body form input[type="text"],
 .modal-body form input[type="number"],
 .modal-body form input[type="date"],
+.modal-body form input[type="time"],
 .modal-body form input[type="email"],
 .modal-body form input[type="password"],
 .modal-body form input[type="tel"],
 .modal-body form select,
 .modal-body form textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 14px;
   background: var(--bg-input);
-  border: 1px solid var(--border-glass);
+  border: 1px solid var(--border-glass-strong);
   border-radius: var(--radius-sm);
   color: var(--text-main);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   transition: var(--transition-fast);
 }
 
@@ -579,8 +580,21 @@ a {
 .modal-body form select:focus,
 .modal-body form textarea:focus {
   border-color: var(--accent-gold);
-  box-shadow: 0 0 0 2px var(--accent-gold-glow);
+  box-shadow: 0 0 0 3px rgba(229, 169, 60, 0.2);
   outline: none;
+}
+
+@media (max-width: 480px) {
+  .modal-body {
+    padding: 20px 16px !important;
+    width: 94% !important;
+    margin: 0 auto;
+  }
+  .modal-body form input,
+  .modal-body form select,
+  .modal-body form button[type="submit"] {
+    font-size: 0.95rem !important;
+  }
 }
 
 /* time 및 date 피커 시계/달력 아이콘 100% 가시성 고도화 */

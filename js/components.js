@@ -474,33 +474,33 @@ const AppComponents = {
    */
   renderLoginModal() {
     return `
-      <div class="modal-body glass-panel" style="max-width:440px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
-          <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
+      <div class="modal-body glass-panel" style="max-width:440px; padding:24px 22px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border-glass); padding-bottom:14px;">
+          <h3 style="font-size:1.18rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px; font-weight:700;">
             <span>🔑</span> 스마트 차량통합관리 로그인
           </h3>
-          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
+          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.3rem; padding:4px;">✕</button>
         </div>
 
-        <form id="auth-login-form">
-          <div class="form-group">
-            <label>복지관 구글 메일 계정 (@gde.or.kr) 또는 아이디 *</label>
-            <input type="text" name="identity" class="form-control" placeholder="구글 메일 주소 (예: kim@gde.or.kr)" required value="kim@gde.or.kr">
+        <form id="auth-login-form" style="display:flex; flex-direction:column; gap:20px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="display:block; margin-bottom:8px; font-weight:600; font-size:0.88rem; color:var(--text-main);">복지관 구글 메일 계정 (@gde.or.kr) 또는 아이디 *</label>
+            <input type="text" name="identity" class="form-control" placeholder="구글 메일 주소 (예: kim@gde.or.kr)" style="padding:12px 14px; font-size:0.95rem; border-radius:var(--radius-sm);" required value="kim@gde.or.kr">
           </div>
 
-          <div class="form-group">
-            <label>비밀번호 *</label>
-            <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="display:block; margin-bottom:8px; font-weight:600; font-size:0.88rem; color:var(--text-main);">비밀번호 *</label>
+            <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" style="padding:12px 14px; font-size:0.95rem; border-radius:var(--radius-sm);" required>
           </div>
 
-          <div id="login-error-msg" style="display:none; color:var(--status-rose); font-size:0.8rem; margin-bottom:12px; font-weight:600;"></div>
+          <div id="login-error-msg" style="display:none; color:var(--status-rose); font-size:0.82rem; font-weight:600; padding:4px 0;"></div>
 
-          <button type="submit" class="btn-primary" style="margin-bottom:12px;">로그인</button>
+          <button type="submit" class="btn-primary" style="margin-top:6px; padding:14px; font-size:1rem; font-weight:700; border-radius:var(--radius-sm); letter-spacing:1px; box-shadow:0 4px 15px rgba(229,169,60,0.25);">로그인</button>
         </form>
 
-        <div style="text-align:center; border-top:1px dashed var(--border-glass); padding-top:14px; margin-top:8px;">
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">아직 계정이 없으신가요?</div>
-          <button id="btn-switch-to-signup" class="btn-secondary" style="padding:8px; font-size:0.85rem;">⚡ 신규 회원가입 신청</button>
+        <div style="text-align:center; border-top:1px dashed var(--border-glass); padding-top:20px; margin-top:24px;">
+          <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">아직 계정이 없으신가요?</div>
+          <button id="btn-switch-to-signup" class="btn-secondary" style="padding:11px 16px; font-size:0.88rem; width:100%; font-weight:600; border-radius:var(--radius-sm);">⚡ 신규 회원가입 신청</button>
         </div>
       </div>
     `;
