@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * 공통 폼 제출 시 "⏳ 저장 중..." 인디케이터 처리 및 버튼 비활성화 헬퍼
+   * 공통 폼 제출 시 "⏳ 저장 중..." / "⏳ 로그인 중..." 인디케이터 처리 및 버튼 비활성화 헬퍼
    */
   function setFormSavingState(formElement, isSaving, customSavingText = '저장 중입니다...') {
     if (!formElement) return;
@@ -487,7 +487,11 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.style.opacity = '0.75';
       submitBtn.style.cursor = 'not-allowed';
       submitBtn.innerHTML = `<span style="display:inline-block; animation:spin 1s infinite linear;">⏳</span> ${customSavingText}`;
-      showToast(`⏳ 구글 스프레드시트에 저장하고 있습니다... 잠시만 기다려 주십시오.`);
+      
+      const toastMsg = customSavingText.includes('로그인')
+        ? `⏳ 인증 서버 확인 및 로그인 처리 중입니다... 잠시만 기다려 주십시오.`
+        : `⏳ 구글 스프레드시트에 저장하고 있습니다... 잠시만 기다려 주십시오.`;
+      showToast(toastMsg);
     } else {
       submitBtn.disabled = false;
       submitBtn.style.opacity = '1';
@@ -1099,15 +1103,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const identity = formData.get('identity');
         const password = formData.get('password');
 
-        const res = await AppStore.login(identity, password);
-        if (!res.success) {
-          errorMsg.textContent = `⚠️ ${res.message}`;
-          errorMsg.style.display = 'block';
-          return;
-        }
+        if (errorMsg) errorMsg.style.display = 'none';
+        setFormSavingState(form, true, '로그인 중...');
 
-        closeModal();
-        showToast(`환영합니다! ${res.user.name} (${res.user.position}) 님 로그인 완료.`);
+        try {
+          const res = await AppStore.login(identity, password);
+          if (!res.success) {
+            if (errorMsg) {
+              errorMsg.textContent = `⚠️ ${res.message}`;
+              errorMsg.style.display = 'block';
+            }
+            showToast(`⚠️ ${res.message}`, 'error');
+            return;
+          }
+
+          closeModal();
+          showToast(`🎉 환영합니다! ${res.user.name} (${res.user.position}) 님 로그인 완료.`);
+        } finally {
+          setFormSavingState(form, false);
+        }
       });
     }
   }
