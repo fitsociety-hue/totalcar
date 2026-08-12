@@ -337,6 +337,7 @@ const AppComponents = {
           </td>
           <td>
             <div style="display:flex; gap:4px;" class="nobr">
+              <button class="btn-create-drivelog-from-req btn-secondary" data-id="${req.request_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:var(--status-emerald); color:var(--status-emerald);" title="이 신청서 기반 차량 운행일지 작성">✍️ 일지 작성</button>
               <button class="btn-edit-request btn-secondary" data-id="${req.request_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:var(--accent-gold); color:var(--accent-gold);" title="운행 신청 정보 수정">✏️ 수정</button>
               <button class="btn-delete-request btn-secondary" data-id="${req.request_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:rgba(239,68,68,0.4); color:var(--status-rose);" title="운행 신청 취소/삭제">🗑️ 취소</button>
             </div>

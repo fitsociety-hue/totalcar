@@ -74,6 +74,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 3.1.1 상단 로고/브랜드 클릭 시 홈 이동 처리
+  const btnBrandHome = document.getElementById('btn-brand-home');
+  if (btnBrandHome) {
+    btnBrandHome.addEventListener('click', () => {
+      tabItems.forEach(t => {
+        if (t.dataset.tab === 'home') t.classList.add('active');
+        else t.classList.remove('active');
+      });
+      AppStore.setState({ activeTab: 'home' });
+      showToast('🏠 홈 화면으로 이동했습니다.');
+    });
+  }
+
   // 3.2 모바일 하단 탭바 전환
   tabItems.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -900,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function openDriveLogModal(logToEdit = null) {
+  function openDriveLogModal(logToEdit = null, linkedRequest = null) {
     const activeVeh = AppStore.getActiveVehicle();
     const user = AppStore.state.currentUser || { name: '김용필' };
     const allRequests = AppStore.state.data.DriveRequests || [];
@@ -920,13 +933,32 @@ document.addEventListener('DOMContentLoaded', () => {
       ? Number(logToEdit.start_km) || 0
       : (vehicleLogs.length > 0 && Number(vehicleLogs[0].end_km) > 0 ? Number(vehicleLogs[0].end_km) : (activeVeh.current_mileage || 0));
 
-    const defaultDate = logToEdit ? logToEdit.date : new Date().toISOString().split('T')[0];
-    const defaultDriver = logToEdit ? logToEdit.driver_name : user.name;
-    const defaultDepart = logToEdit ? logToEdit.depart_time : '16:00';
-    const defaultArrival = logToEdit ? logToEdit.arrival_time : '16:45';
-    const defaultDest = logToEdit ? logToEdit.destination : '';
-    const defaultPurpose = logToEdit ? logToEdit.purpose : '';
+    const defaultDate = logToEdit 
+      ? logToEdit.date 
+      : (linkedRequest ? (linkedRequest.drive_date || '').replace(/T.*/, '') : new Date().toISOString().split('T')[0]);
+
+    const defaultDriver = logToEdit 
+      ? logToEdit.driver_name 
+      : (linkedRequest ? (linkedRequest.driver_name || linkedRequest.applicant_name) : user.name);
+
+    const defaultDepart = logToEdit 
+      ? logToEdit.depart_time 
+      : (linkedRequest ? (linkedRequest.start_time || '16:00').slice(0, 5) : '16:00');
+
+    const defaultArrival = logToEdit 
+      ? logToEdit.arrival_time 
+      : (linkedRequest ? (linkedRequest.end_time || '16:45').slice(0, 5) : '16:45');
+
+    const defaultDest = logToEdit 
+      ? logToEdit.destination 
+      : (linkedRequest ? (linkedRequest.destination || (linkedRequest.purpose || '').match(/^([^\s(]+)/)?.[1] || '') : '');
+
+    const defaultPurpose = logToEdit 
+      ? logToEdit.purpose 
+      : (linkedRequest ? linkedRequest.purpose : '');
+
     const defaultEndKm = logToEdit ? logToEdit.end_km : (lastEndKm > 0 ? lastEndKm + 25 : 25);
+    const selectedReqId = linkedRequest ? linkedRequest.request_id : (logToEdit ? logToEdit.request_id || '' : '');
 
     modalOverlay.innerHTML = `
       <div class="modal-body glass-panel">
@@ -947,7 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <select name="request_id" class="form-control" id="linked-request-select" style="border-color:var(--status-emerald); background:rgba(16,185,129,0.08);">
               <option value="">-- 운행 신청서 직접 선택 --</option>
               ${linkedRequests.map(r => `
-                <option value="${r.request_id}" 
+                <option value="${r.request_id}" ${r.request_id === selectedReqId ? 'selected' : ''} 
                   data-date="${r.drive_date}" 
                   data-start="${r.start_time}" 
                   data-end="${r.end_time}" 
