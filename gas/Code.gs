@@ -125,14 +125,17 @@ function getAllSheetsData(ss) {
       result[name] = [];
       return;
     }
-    var values = sheet.getDataRange().getValues();
+    var range = sheet.getDataRange();
+    var values = range.getValues();
+    var displayValues = range.getDisplayValues();
+
     if (values.length === 0 || (values.length === 1 && values[0].length === 1 && values[0][0] === '')) {
       result[name] = [];
       return;
     }
 
     var defaultCols = DEFAULT_HEADERS[name] || [];
-    var firstRow = values[0];
+    var firstRow = displayValues[0] || values[0];
 
     // 1행이 헤더인지 판단
     var isHeaderRow = false;
@@ -152,7 +155,27 @@ function getAllSheetsData(ss) {
       var hasData = false;
       for (var j = 0; j < headers.length; j++) {
         var key = String(headers[j]).trim() || ('col_' + j);
-        var val = (values[i] && j < values[i].length) ? values[i][j] : '';
+        var dispVal = (displayValues[i] && j < displayValues[i].length) ? displayValues[i][j] : '';
+        var rawVal = (values[i] && j < values[i].length) ? values[i][j] : '';
+
+        var val = dispVal;
+        if (!val && rawVal) {
+          if (rawVal instanceof Date) {
+            val = Utilities.formatDate(rawVal, 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+          } else {
+            val = String(rawVal);
+          }
+        }
+        val = String(val).trim();
+
+        // 1899 ISO 포맷 감지 시 시간만 추출 방어 (07:32:08 -> 07:32)
+        if (val.indexOf('1899-12-30') !== -1 || val.indexOf('T0') !== -1) {
+          var tMatch = val.match(/T(\d{2}:\d{2})/);
+          if (tMatch && tMatch[1]) {
+            val = tMatch[1];
+          }
+        }
+
         rowObj[key] = val;
         if (val !== '') hasData = true;
       }
@@ -180,7 +203,12 @@ function addDriveRequest(ss, data) {
   // 서버 2중 시간대 중복 검증 (동일 차량, 동일 날짜 겹침 차단)
   var toMinutes = function(t) {
     if (!t) return 0;
-    var p = String(t).split(':');
+    var cleanT = String(t);
+    if (cleanT.indexOf('T') !== -1) {
+      var m = cleanT.match(/T(\d{2}:\d{2})/);
+      if (m) cleanT = m[1];
+    }
+    var p = cleanT.split(':');
     return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
   };
   var nStart = toMinutes(data.start_time);
@@ -205,6 +233,11 @@ function addDriveRequest(ss, data) {
   var reqId = 'REQ-' + Date.now();
   var nowStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
 
+  // 시간/날짜가 시트에서 1899 Date로 자동 변환되지 않도록 문자열 보장
+  var cleanStartDate = String(data.drive_date || '').replace(/T.*/, '');
+  var cleanStartTime = String(data.start_time || '').replace(/.*T/, '').slice(0, 5);
+  var cleanEndTime = String(data.end_time || '').replace(/.*T/, '').slice(0, 5);
+
   sheet.appendRow([
     reqId,
     data.team || '',
@@ -213,16 +246,16 @@ function addDriveRequest(ss, data) {
     data.driver_name || data.applicant_name || '',
     data.companion || '',
     data.vehicle_id || '',
-    data.drive_date || '',
-    data.start_time || '',
-    data.end_time || '',
+    "'" + cleanStartDate,
+    "'" + cleanStartTime,
+    "'" + cleanEndTime,
     data.purpose || '',
     data.approval_status || '확정(우선권)',
     data.approver_id || '자동확정',
     nowStr
   ]);
 
-  return { request_id: reqId, status: '확정', vehicle_id: data.vehicle_id, drive_date: data.drive_date };
+  return { request_id: reqId, status: '확정', vehicle_id: data.vehicle_id, drive_date: cleanStartDate };
 }
 
 /**

@@ -1,7 +1,43 @@
-/**
- * 강동어울림복지관 차량통합관리 - UI 컴포넌트 렌더러 (js/components.js)
- * 벤츠 모바일 앱 벤치마킹 & 전문가 다크 타이타늄 앰버 테마 적용
- */
+// KST 대한민국 시간 및 날짜 포맷팅 헬퍼 함수 (ISO 1899 문자열 완전 정돈)
+function formatTimeDisplay(timeVal) {
+  if (!timeVal) return '09:00';
+  const str = String(timeVal).trim();
+  if (/^\d{2}:\d{2}$/.test(str)) return str;
+
+  if (str.includes('T')) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      // ISO UTC 시간에 KST (+9시간) 한국 표준시 반영
+      const utcHours = d.getUTCHours();
+      const kstHours = (utcHours + 9) % 24;
+      const hours = String(kstHours).padStart(2, '0');
+      const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    const match = str.match(/T(\d{2}):(\d{2})/);
+    if (match && match[1] && match[2]) {
+      const h = (parseInt(match[1], 10) + 9) % 24;
+      return `${String(h).padStart(2, '0')}:${match[2]}`;
+    }
+  }
+  return str.slice(0, 5) || '09:00';
+}
+
+function formatDateDisplay(dateVal) {
+  if (!dateVal) return new Date().toISOString().split('T')[0];
+  const str = String(dateVal).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (str.includes('T')) {
+    const parts = str.split('T');
+    if (parts[0] && parts[0].length === 10 && !parts[0].startsWith('1899')) {
+      return parts[0];
+    }
+  }
+  if (str.startsWith('1899')) {
+    return new Date().toISOString().split('T')[0];
+  }
+  return str.slice(0, 10);
+}
 
 const AppComponents = {
 
@@ -250,7 +286,6 @@ const AppComponents = {
             <h4>다음 정기점검 / 소모품</h4>
             <p>엔진오일 및 타이어 공기압 정상</p>
           </div>
-          <div class="extra-icon-box">🛠️</div>
         </div>
       </div>
     `;
@@ -265,18 +300,39 @@ const AppComponents = {
       : requests.filter(r => r.vehicle_id === activeVehicleId);
 
     const rowsHTML = vehRequests.map(req => {
+      const dateStr = formatDateDisplay(req.drive_date);
+      const startStr = formatTimeDisplay(req.start_time);
+      const endStr = formatTimeDisplay(req.end_time);
+
+      // 데이터 필드 밀림 대비 정합성 보장
+      const vehIdStr = (req.vehicle_id && !req.vehicle_id.includes('1899') && !req.vehicle_id.includes('T0'))
+        ? req.vehicle_id 
+        : (req.driver_name || activeVehicleId || '365라 1271');
+
+      const driverStr = (req.driver_name && !req.driver_name.includes('1899') && !req.driver_name.includes('T0'))
+        ? req.driver_name 
+        : (req.applicant_name || '직원');
+
+      const companionStr = (req.companion && !req.companion.includes('1899') && !req.companion.includes('T0'))
+        ? req.companion 
+        : '';
+
+      const statusStr = (req.approval_status && !req.approval_status.includes('T0') && !req.approval_status.includes('1899'))
+        ? req.approval_status 
+        : '확정(우선권)';
+
       return `
         <tr>
-          <td><span class="nobr"><strong>${req.drive_date}</strong></span><br><span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">🕒 ${req.start_time}~${req.end_time}</span></td>
-          <td><span class="nobr" style="color:var(--accent-gold); font-weight:700;">🚘 ${req.vehicle_id}</span></td>
+          <td><span class="nobr"><strong>${dateStr}</strong></span><br><span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">🕒 ${startStr}~${endStr}</span></td>
+          <td><span class="nobr" style="color:var(--accent-gold); font-weight:700;">🚘 ${vehIdStr}</span></td>
           <td>
-            <span class="nobr">👤 ${req.driver_name || req.applicant_name} <small style="color:var(--text-muted);">(${req.team || ''})</small></span>
-            ${req.companion ? `<br><span style="font-size:0.72rem; color:var(--status-emerald);" class="nobr">👥 동승: ${req.companion}</span>` : ''}
+            <span class="nobr">👤 ${driverStr} <small style="color:var(--text-muted);">(${req.team || ''})</small></span>
+            ${companionStr ? `<br><span style="font-size:0.72rem; color:var(--status-emerald);" class="nobr">👥 동승: ${companionStr}</span>` : ''}
           </td>
           <td style="max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
           <td>
             <span class="badge nobr" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);">
-              ${req.approval_status || '확정'}
+              ${statusStr}
             </span>
           </td>
           <td>
