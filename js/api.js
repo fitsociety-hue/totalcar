@@ -16,15 +16,28 @@ const AppAPI = {
     }
     try {
       const parsed = JSON.parse(existing);
-      // 필수 배열 키 유효성 방어 (누락 시 MOCK_DATA의 기본값 복원)
+      // 필수 배열 키 유효성 방어 (누락 시 MOCK_DATA의 기본값 복원 및 더미 차량 236루5818 클린징)
       const keys = ['Users', 'Vehicles', 'DriveLogs', 'DriveRequests', 'Fuel', 'Maintenance', 'Accidents', 'Insurance'];
       keys.forEach(k => {
         if (!parsed[k] || !Array.isArray(parsed[k]) || parsed[k].length === 0) {
           if (MOCK_DATA[k] && Array.isArray(MOCK_DATA[k])) {
             parsed[k] = MOCK_DATA[k];
           }
+        } else {
+          // 예전 더미 차량 236루5818 관련 데이터 자동 클린징
+          parsed[k] = parsed[k].filter(item => {
+            if (item && item.vehicle_id === '236루5818') return false;
+            return true;
+          });
         }
       });
+
+      // Vehicles에 365라 1271가 없으면 MOCK_DATA 차량으로 갱신
+      if (!parsed.Vehicles || parsed.Vehicles.length === 0 || !parsed.Vehicles.some(v => v.vehicle_id === '365라 1271')) {
+        parsed.Vehicles = MOCK_DATA.Vehicles;
+      }
+
+      this.saveStorage(parsed);
       return parsed;
     } catch (e) {
       console.error('LocalStorage parse error, resetting mock data:', e);

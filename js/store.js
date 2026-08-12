@@ -4,7 +4,7 @@
 const AppStore = {
   state: {
     currentUser: null,
-    activeVehicleId: '236루5818',
+    activeVehicleId: '365라 1271',
     activeTab: 'home',
     viewMode: 'mobile', // 'mobile' | 'desktop'
     bookingFilterMode: 'all', // 'selected' | 'all' (기본값 'all'로 전체 운행신청 내역 표출)
