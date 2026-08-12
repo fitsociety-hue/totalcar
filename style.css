@@ -544,33 +544,43 @@ a {
   font-weight: 700;
 }
 
-/* Form Groups & Inputs */
-.form-group {
-  margin-bottom: 16px;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
-.form-group label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 6px;
+@media (max-width: 540px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 
-.form-control {
+.modal-body form input[type="text"],
+.modal-body form input[type="number"],
+.modal-body form input[type="date"],
+.modal-body form input[type="email"],
+.modal-body form input[type="password"],
+.modal-body form input[type="tel"],
+.modal-body form select,
+.modal-body form textarea {
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: var(--bg-input);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-sm);
   color: var(--text-main);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   transition: var(--transition-fast);
 }
 
-.form-control:focus {
+.modal-body form input:focus,
+.modal-body form select:focus,
+.modal-body form textarea:focus {
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 2px var(--accent-gold-glow);
+  outline: none;
 }
 
 /* Calendar Timeline Grid */

@@ -670,10 +670,12 @@ const AppComponents = {
     };
 
     return `
-      <div class="modal-card" style="max-width:560px;">
-        <div class="modal-header">
-          <h3>${isEdit ? '✏️ 차량 & 하이패스/보험 정보 수정' : '🚗 차량 & 하이패스/보험 등록'}</h3>
-          <button class="modal-close-btn">&times;</button>
+      <div class="modal-body glass-panel" style="max-width:560px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
+          <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
+            ${isEdit ? '<span>✏️</span> 차량 & 하이패스/보험 정보 수정' : '<span>🚗</span> 차량 & 하이패스/보험 신규 등록'}
+          </h3>
+          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
         </div>
         <form id="form-vehicle-manage">
           <div style="background:rgba(229,169,60,0.08); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass-strong); margin-bottom:12px;">

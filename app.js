@@ -443,7 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const insuranceToEdit = vehicleToEdit 
       ? AppStore.state.data.Insurance.find(i => i.vehicle_id === vehicleToEdit.vehicle_id) 
       : null;
-    openModal(AppComponents.renderVehicleFormModal(vehicleToEdit, insuranceToEdit));
+
+    modalOverlay.innerHTML = AppComponents.renderVehicleFormModal(vehicleToEdit, insuranceToEdit);
+    openModal();
 
     const form = document.getElementById('form-vehicle-manage');
     if (form) {
@@ -925,7 +927,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function openModal() {
+  function openModal(content = null) {
+    if (typeof content === 'string' && content.trim()) {
+      modalOverlay.innerHTML = content;
+    }
     modalOverlay.classList.add('active');
   }
 
