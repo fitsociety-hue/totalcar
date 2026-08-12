@@ -584,10 +584,25 @@ a {
   outline: none;
 }
 
-@media (max-width: 480px) {
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+@media (max-width: 540px) {
+  .form-group {
+    margin-bottom: 22px !important;
+  }
   .modal-body {
-    padding: 20px 16px !important;
-    width: 94% !important;
+    padding: 22px 18px !important;
+    width: 95% !important;
     margin: 0 auto;
   }
   .modal-body form input,

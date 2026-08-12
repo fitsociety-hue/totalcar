@@ -757,64 +757,104 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openDriveLogModal() {
     const activeVeh = AppStore.getActiveVehicle();
-    const user = AppStore.state.currentUser || { name: '김복지' };
-    const linkedRequests = AppStore.state.data.DriveRequests.filter(r => 
-      r.vehicle_id === activeVeh.vehicle_id && r.approval_status === '확정(우선권)'
+    const user = AppStore.state.currentUser || { name: '김용필' };
+    const allRequests = AppStore.state.data.DriveRequests || [];
+    
+    // 승인/확정된 차량 운행 신청서 목록 필터링
+    const linkedRequests = allRequests.filter(r => 
+      String(r.vehicle_id).trim() === String(activeVeh.vehicle_id).trim() && 
+      (!r.approval_status || r.approval_status !== '반려')
     );
+
+    // 해당 차량의 직전 운행일지 종전 기록(최종 end_km) 조회
+    const vehicleLogs = (AppStore.state.data.DriveLogs || [])
+      .filter(l => String(l.vehicle_id).trim() === String(activeVeh.vehicle_id).trim())
+      .sort((a, b) => (Number(b.end_km) || 0) - (Number(a.end_km) || 0));
+
+    const lastEndKm = vehicleLogs.length > 0 && Number(vehicleLogs[0].end_km) > 0
+      ? Number(vehicleLogs[0].end_km)
+      : (activeVeh.current_mileage || 0);
 
     modalOverlay.innerHTML = `
       <div class="modal-body glass-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
-          <h3 style="font-size:1.1rem; color:var(--accent-gold);">📑 차량운행일지 작성</h3>
-          <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--border-glass); padding-bottom:12px;">
+          <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
+            <span>📑</span> 차량 운행일지 작성
+          </h3>
+          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
         </div>
 
-        <form id="drivelog-submit-form">
+        <form id="drivelog-submit-form" style="display:flex; flex-direction:column; gap:20px;">
           <input type="hidden" name="vehicle_id" value="${activeVeh.vehicle_id}">
 
-          ${linkedRequests.length > 0 ? `
           <div class="form-group">
-            <label style="color:var(--status-emerald); font-weight:700;">🔗 운행신청 연결 (승인된 신청건 자동 연결)</label>
-            <select name="request_id" class="form-control" id="linked-request-select" style="border-color:var(--status-emerald);">
-              <option value="">-- 연결 없이 직접 작성 --</option>
-              ${linkedRequests.map(r => `<option value="${r.request_id}" data-date="${r.drive_date}" data-start="${r.start_time}" data-end="${r.end_time}" data-purpose="${r.purpose}">${r.drive_date} ${r.start_time}~${r.end_time} | ${r.applicant_name} | ${(r.purpose || '').substring(0,20)}</option>`).join('')}
+            <label style="color:var(--status-emerald); font-weight:700;">📋 차량 운행 신청서 불러오기 (선택 시 자동채움)</label>
+            <select name="request_id" class="form-control" id="linked-request-select" style="border-color:var(--status-emerald); background:rgba(16,185,129,0.08);">
+              <option value="">-- 운행 신청서 직접 선택 --</option>
+              ${linkedRequests.map(r => `
+                <option value="${r.request_id}" 
+                  data-date="${r.drive_date}" 
+                  data-start="${r.start_time}" 
+                  data-end="${r.end_time}" 
+                  data-driver="${r.driver_name || r.applicant_name}" 
+                  data-companion="${r.companion || ''}" 
+                  data-purpose="${r.purpose || ''}">
+                  📅 ${r.drive_date} (${r.start_time}~${r.end_time}) | 👤 ${r.driver_name || r.applicant_name} | ${r.purpose || '목적 미기재'}
+                </option>
+              `).join('')}
             </select>
           </div>
-          ` : `<input type="hidden" name="request_id" value="">`}
 
           <div class="form-group">
-            <label>운행일자 / 운전자</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <label>운행일자 / 운전자 *</label>
+            <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:12px;">
               <input type="date" name="date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
-              <input type="text" class="form-control" value="${user.name}" readonly>
+              <input type="text" name="driver_name" id="drivelog-driver-name" class="form-control" value="${user.name}" required placeholder="운전자 성명">
             </div>
           </div>
 
           <div class="form-group">
-            <label>출발시간 / 도착시간</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              <input type="time" name="depart_time" class="form-control" value="09:30" required>
-              <input type="time" name="arrival_time" class="form-control" value="11:40" required>
+            <label>🕒 실제 운행 시간 (출발 ~ 복귀/도착) *</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.82rem;">🕒 출발</span>
+                <input type="time" name="depart_time" id="drivelog-depart-time" class="form-control" value="16:00" style="padding-left:56px;" required>
+              </div>
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.82rem;">🕒 도착</span>
+                <input type="time" name="arrival_time" id="drivelog-arrival-time" class="form-control" value="16:45" style="padding-left:56px;" required>
+              </div>
             </div>
           </div>
 
           <div class="form-group">
-            <label>목적지 / 운행목적</label>
-            <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:8px;">
-              <input type="text" name="destination" class="form-control" placeholder="목적지" required>
-              <input type="text" name="purpose" class="form-control" placeholder="운행목적" required>
+            <label>목적지 / 운행목적 & 동승자</label>
+            <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:12px;">
+              <input type="text" name="destination" id="drivelog-destination" class="form-control" placeholder="목적지 (예: 강동구청)" required>
+              <input type="text" name="purpose" id="drivelog-purpose" class="form-control" placeholder="운행목적 (예: 서류 제출)" required>
             </div>
           </div>
 
           <div class="form-group">
-            <label>출발 km (직전 종료km 자동제안) / 도착 km *</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              <input type="number" id="start_km" name="start_km" class="form-control" value="${activeVeh.current_mileage}" required>
-              <input type="number" id="end_km" name="end_km" class="form-control" value="${activeVeh.current_mileage + 25}" required>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <label style="margin-bottom:0;">🚘 주행거리 입력 (종전 기록 사용)</label>
+              <span id="calculated-distance-badge" style="font-size:0.8rem; font-weight:700; color:var(--accent-gold); background:rgba(229,169,60,0.15); padding:2px 8px; border-radius:10px;">
+                주행거리: 0 km
+              </span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">출발 km (종전 최종 기록)</span>
+                <input type="number" id="start_km" name="start_km" class="form-control" value="${lastEndKm}" required readonly style="background:rgba(255,255,255,0.05); color:var(--text-muted);">
+              </div>
+              <div>
+                <span style="font-size:0.75rem; color:var(--accent-gold); display:block; margin-bottom:4px; font-weight:700;">도착 km (복귀 후 직접 입력) *</span>
+                <input type="number" id="end_km" name="end_km" class="form-control" value="${lastEndKm > 0 ? lastEndKm + 25 : 25}" required placeholder="복귀 후 누적 km" style="border-color:var(--accent-gold);">
+              </div>
             </div>
           </div>
 
-          <button type="submit" class="btn-primary">운행일지 저장</button>
+          <button type="submit" class="btn-primary" style="margin-top:8px; padding:14px; font-size:1rem;">📑 차량 운행일지 저장</button>
         </form>
       </div>
     `;
@@ -822,16 +862,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const form = document.getElementById('drivelog-submit-form');
     const linkedSelect = document.getElementById('linked-request-select');
+    const startKmInput = document.getElementById('start_km');
+    const endKmInput = document.getElementById('end_km');
+    const distanceBadge = document.getElementById('calculated-distance-badge');
+
+    // 주행거리 실시간 연산 헬퍼
+    const updateCalculatedDistance = () => {
+      const startVal = Number(startKmInput.value) || 0;
+      const endVal = Number(endKmInput.value) || 0;
+      const dist = Math.max(0, endVal - startVal);
+      if (distanceBadge) {
+        distanceBadge.textContent = `🚘 주행거리: ${dist} km`;
+      }
+    };
+
+    updateCalculatedDistance();
+    if (endKmInput) {
+      endKmInput.addEventListener('input', updateCalculatedDistance);
+    }
+
+    // 신청서 불러오기 이벤트 핸들러
     if (linkedSelect && form) {
       linkedSelect.addEventListener('change', () => {
         const opt = linkedSelect.selectedOptions[0];
         if (opt && opt.value) {
           const dateInput = form.querySelector('[name="date"]');
-          const departInput = form.querySelector('[name="depart_time"]');
-          const purposeInput = form.querySelector('[name="purpose"]');
-          if (dateInput && opt.dataset.date) dateInput.value = opt.dataset.date;
-          if (departInput && opt.dataset.start) departInput.value = opt.dataset.start;
-          if (purposeInput && opt.dataset.purpose) purposeInput.value = opt.dataset.purpose;
+          const driverInput = document.getElementById('drivelog-driver-name');
+          const departInput = document.getElementById('drivelog-depart-time');
+          const arrivalInput = document.getElementById('drivelog-arrival-time');
+          const purposeInput = document.getElementById('drivelog-purpose');
+          const destInput = document.getElementById('drivelog-destination');
+
+          if (dateInput && opt.dataset.date) dateInput.value = opt.dataset.date.replace(/T.*/, '');
+          if (driverInput && opt.dataset.driver) driverInput.value = opt.dataset.driver;
+          if (departInput && opt.dataset.start) departInput.value = opt.dataset.start.slice(0, 5);
+          if (arrivalInput && opt.dataset.end) arrivalInput.value = opt.dataset.end.slice(0, 5);
+
+          const fullPurpose = opt.dataset.purpose || '';
+          if (purposeInput) purposeInput.value = fullPurpose;
+          if (destInput && fullPurpose) {
+            const destMatch = fullPurpose.match(/^([^\s(]+)/);
+            if (destMatch) destInput.value = destMatch[1];
+          }
+          showToast(`📋 [${opt.dataset.driver}] 님의 운행 신청 정보가 자동 기입되었습니다.`);
         }
       });
     }
@@ -843,13 +916,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const end_km = Number(formData.get('end_km'));
       const distance_km = end_km - start_km;
 
+      if (end_km < start_km) {
+        showToast('도착 km는 출발 km보다 같거나 커야 합니다.', 'error');
+        return;
+      }
+
       setFormSavingState(form, true, '운행일지 저장 중...');
       try {
         await AppAPI.request('createDriveLog', {
           vehicle_id: activeVeh.vehicle_id,
           date: formData.get('date'),
           driver_id: user.user_id || '1001',
-          driver_name: user.name,
+          driver_name: formData.get('driver_name') || user.name,
           depart_time: formData.get('depart_time'),
           arrival_time: formData.get('arrival_time'),
           destination: formData.get('destination'),
@@ -862,8 +940,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await AppStore.loadInitialData();
         closeModal();
-        const linkedMsg = formData.get('request_id') ? ` (신청 ${formData.get('request_id')} 연결)` : '';
-        showToast(`📑 운행일지가 성공적으로 저장되었습니다. (주행거리: ${distance_km}km)${linkedMsg}`);
+        const linkedMsg = formData.get('request_id') ? ` (신청 ${formData.get('request_id')} 연동)` : '';
+        showToast(`📑 차량 운행일지가 정상적으로 저장되었습니다! (주행거리: ${distance_km}km)${linkedMsg}`);
       } finally {
         setFormSavingState(form, false);
       }
