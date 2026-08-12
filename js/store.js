@@ -7,6 +7,7 @@ const AppStore = {
     activeVehicleId: '236루5818',
     activeTab: 'home',
     viewMode: 'mobile', // 'mobile' | 'desktop'
+    bookingFilterMode: 'all', // 'selected' | 'all' (기본값 'all'로 전체 운행신청 내역 표출)
     data: MOCK_DATA,
     loading: false,
     selectedDate: new Date().toISOString().split('T')[0]

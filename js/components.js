@@ -259,18 +259,24 @@ const AppComponents = {
   /**
    * 3. 운행 신청 & 중복 예약 캘린더 (Conflict Detector 내장)
    */
-  renderBookingCalendar(requests, activeVehicleId) {
-    const vehRequests = requests.filter(r => r.vehicle_id === activeVehicleId);
+  renderBookingCalendar(requests, activeVehicleId, showAll = false) {
+    const vehRequests = showAll
+      ? requests
+      : requests.filter(r => r.vehicle_id === activeVehicleId);
 
     const rowsHTML = vehRequests.map(req => {
       return `
         <tr>
-          <td><span class="nobr"><strong>${req.drive_date}</strong></span><br><span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${req.start_time}~${req.end_time}</span></td>
-          <td><span class="nobr">${req.applicant_name} <small style="color:var(--text-muted);">(${req.team})</small></span></td>
-          <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
+          <td><span class="nobr"><strong>${req.drive_date}</strong></span><br><span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">🕒 ${req.start_time}~${req.end_time}</span></td>
+          <td><span class="nobr" style="color:var(--accent-gold); font-weight:700;">🚘 ${req.vehicle_id}</span></td>
+          <td>
+            <span class="nobr">👤 ${req.driver_name || req.applicant_name} <small style="color:var(--text-muted);">(${req.team || ''})</small></span>
+            ${req.companion ? `<br><span style="font-size:0.72rem; color:var(--status-emerald);" class="nobr">👥 동승: ${req.companion}</span>` : ''}
+          </td>
+          <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${req.purpose}">${req.purpose}</td>
           <td>
             <span class="badge nobr" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);">
-              확정 (우선권)
+              ${req.approval_status || '확정'}
             </span>
           </td>
         </tr>
@@ -279,8 +285,14 @@ const AppComponents = {
 
     return `
       <div class="glass-panel" style="padding:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;"><span>📅</span> 차량 운행 예약 현황</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;"><span>📅</span> 차량 운행 예약 현황</h3>
+            <div style="display:inline-flex; background:rgba(0,0,0,0.3); border:1px solid var(--border-glass); border-radius:14px; padding:2px;">
+              <button id="btn-booking-filter-selected" class="btn-booking-filter ${!showAll ? 'active-filter' : ''}" style="padding:2px 8px; font-size:0.72rem; border-radius:12px; color:${!showAll ? 'var(--accent-gold)' : 'var(--text-muted)'}; background:${!showAll ? 'rgba(229,169,60,0.2)' : 'transparent'}; font-weight:600; cursor:pointer;">🚘 ${activeVehicleId || '선택차량'}</button>
+              <button id="btn-booking-filter-all" class="btn-booking-filter ${showAll ? 'active-filter' : ''}" style="padding:2px 8px; font-size:0.72rem; border-radius:12px; color:${showAll ? 'var(--accent-gold)' : 'var(--text-muted)'}; background:${showAll ? 'rgba(229,169,60,0.2)' : 'transparent'}; font-weight:600; cursor:pointer;">🌐 전체차량 (${requests.length}건)</button>
+            </div>
+          </div>
           <button id="btn-open-request-modal" class="btn-primary" style="padding:6px 12px; font-size:0.8rem; width:auto;">+ 운행 신청</button>
         </div>
 
@@ -288,14 +300,15 @@ const AppComponents = {
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width:28%;">예정일시</th>
-                <th style="width:28%;">신청자</th>
-                <th style="width:28%;">운행목적</th>
-                <th style="width:16%;">상태</th>
+                <th style="width:24%;">예정일시</th>
+                <th style="width:20%;">차량번호</th>
+                <th style="width:22%;">신청자</th>
+                <th style="width:22%;">운행목적</th>
+                <th style="width:12%;">상태</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHTML || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:20px;">예약된 운행 건이 없습니다.</td></tr>'}
+              ${rowsHTML || '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:20px;">예약된 운행 건이 없습니다.</td></tr>'}
             </tbody>
           </table>
         </div>

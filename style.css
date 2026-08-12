@@ -583,6 +583,22 @@ a {
   outline: none;
 }
 
+/* time 및 date 피커 시계/달력 아이콘 100% 가시성 고도화 */
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) sepia(1) saturate(5) hue-rotate(5deg);
+  cursor: pointer;
+  opacity: 0.95;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  font-size: 1.15rem;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1) drop-shadow(0 0 8px rgba(229, 169, 60, 0.9));
+  transform: scale(1.15);
+}
+
 /* Calendar Timeline Grid */
 .calendar-grid {
   display: grid;

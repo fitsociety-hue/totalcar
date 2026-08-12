@@ -93,8 +93,19 @@ function doPost(e) {
   }
 }
 
+var DEFAULT_HEADERS = {
+  Users: ['user_id', 'name', 'team', 'position', 'password_hash', 'phone', 'email', 'status', 'created_at'],
+  Vehicles: ['vehicle_id', 'model', 'register_date', 'insurance_start', 'insurance_end', 'status', 'current_mileage', 'hipass_id', 'hipass_card', 'note'],
+  DriveLogs: ['log_id', 'vehicle_id', 'date', 'driver_id', 'driver_name', 'depart_time', 'arrival_time', 'destination', 'purpose', 'start_km', 'end_km', 'distance_km', 'companion', 'hipass_balance', 'request_id', 'status'],
+  DriveRequests: ['request_id', 'team', 'applicant_id', 'applicant_name', 'driver_name', 'companion', 'vehicle_id', 'drive_date', 'start_time', 'end_time', 'purpose', 'approval_status', 'approver_id', 'created_at'],
+  Fuel: ['fuel_id', 'vehicle_id', 'date', 'amount_won', 'liter', 'station', 'unit_price', 'note'],
+  Maintenance: ['maint_id', 'vehicle_id', 'in_date', 'out_date', 'reason', 'detail', 'cost_total', 'insurance_claim', 'self_pay_org', 'self_pay_staff', 'next_due_date', 'receipt_file'],
+  Accidents: ['accident_id', 'vehicle_id', 'date', 'driver_id', 'driver_name', 'location', 'accident_role', 'damage_person_yn', 'damage_person_detail', 'damage_property_yn', 'damage_property_detail', 'counterpart_name', 'counterpart_phone', 'counterpart_insurance', 'description', 'claim_number', 'insurance_process_date', 'processed_amount', 'linked_maint_id', 'attachment'],
+  Insurance: ['vehicle_id', 'company', 'policy_number', 'contractor', 'claim_phone', 'insurance_start', 'insurance_end', 'coverage']
+};
+
 /**
- * 모든 시트 데이터 읽어오기
+ * 모든 시트 데이터 읽어오기 (헤더 없는 시트 자동 감지 및 스마트 파싱)
  */
 function getAllSheetsData(ss) {
   var sheetNames = ['Users', 'Vehicles', 'DriveLogs', 'DriveRequests', 'Fuel', 'Maintenance', 'Accidents', 'Insurance', 'ApprovalLogs', 'AuditLogs', 'Notifications'];
@@ -107,18 +118,37 @@ function getAllSheetsData(ss) {
       return;
     }
     var values = sheet.getDataRange().getValues();
-    if (values.length <= 1) {
+    if (values.length === 0 || (values.length === 1 && values[0].length === 1 && values[0][0] === '')) {
       result[name] = [];
       return;
     }
-    var headers = values[0];
-    var rows = [];
-    for (var i = 1; i < values.length; i++) {
-      var rowObj = {};
-      for (var j = 0; j < headers.length; j++) {
-        rowObj[headers[j]] = values[i][j];
+
+    var defaultCols = DEFAULT_HEADERS[name] || [];
+    var firstRow = values[0];
+
+    // 1행이 헤더인지 판단
+    var isHeaderRow = false;
+    if (firstRow && firstRow.length > 0) {
+      var firstCell = String(firstRow[0]).trim().toLowerCase();
+      if (firstCell.indexOf('id') !== -1 || firstCell === 'user_id' || firstCell === 'vehicle_id' || firstCell === 'request_id' || firstCell === 'log_id' || firstCell === 'fuel_id' || firstCell === 'maint_id' || firstCell === 'accident_id' || defaultCols.indexOf(firstCell) !== -1) {
+        isHeaderRow = true;
       }
-      rows.push(rowObj);
+    }
+
+    var headers = isHeaderRow ? firstRow : defaultCols;
+    var startIndex = isHeaderRow ? 1 : 0;
+    var rows = [];
+
+    for (var i = startIndex; i < values.length; i++) {
+      var rowObj = {};
+      var hasData = false;
+      for (var j = 0; j < headers.length; j++) {
+        var key = String(headers[j]).trim() || ('col_' + j);
+        var val = (values[i] && j < values[i].length) ? values[i][j] : '';
+        rowObj[key] = val;
+        if (val !== '') hasData = true;
+      }
+      if (hasData) rows.push(rowObj);
     }
     result[name] = rows;
   });
@@ -133,6 +163,12 @@ function addDriveRequest(ss, data) {
   var sheet = ss.getSheetByName('DriveRequests');
   if (!sheet) sheet = ss.insertSheet('DriveRequests');
 
+  var values = sheet.getDataRange().getValues();
+  // 시트가 완전히 비어있을 경우 헤더 행 자동 삽입
+  if (values.length === 0 || (values.length === 1 && values[0].length === 1 && values[0][0] === '')) {
+    sheet.appendRow(DEFAULT_HEADERS.DriveRequests);
+  }
+
   var reqId = 'REQ-' + Date.now();
   var nowStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
 
@@ -141,6 +177,8 @@ function addDriveRequest(ss, data) {
     data.team || '',
     data.applicant_id || '',
     data.applicant_name || '',
+    data.driver_name || data.applicant_name || '',
+    data.companion || '',
     data.vehicle_id || '',
     data.drive_date || '',
     data.start_time || '',
@@ -151,7 +189,7 @@ function addDriveRequest(ss, data) {
     nowStr
   ]);
 
-  return { request_id: reqId, status: '확정' };
+  return { request_id: reqId, status: '확정', vehicle_id: data.vehicle_id, drive_date: data.drive_date };
 }
 
 /**

@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       } else if (activeTab === 'schedule') {
         mobileContent.innerHTML = `
-          ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId)}
+          ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId, state.bookingFilterMode === 'all')}
         `;
       } else if (activeTab === 'drivelog') {
         mobileContent.innerHTML = renderDriveLogTab(data.DriveLogs, activeVehicleId);
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
           <div>
-            ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId)}
+            ${AppComponents.renderBookingCalendar(data.DriveRequests, activeVehicleId, state.bookingFilterMode === 'all')}
           </div>
           <div>
             ${renderDriveLogTab(data.DriveLogs, activeVehicleId)}
@@ -430,7 +430,20 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // (승인/반려 제거됨 — 중복 예약 자동 검증으로 대체)
+    // 예약 현황 선택차량/전체차량 필터 버튼 핸들러
+    const btnFilterSelected = document.getElementById('btn-booking-filter-selected');
+    if (btnFilterSelected) {
+      btnFilterSelected.addEventListener('click', () => {
+        AppStore.setState({ bookingFilterMode: 'selected' });
+      });
+    }
+
+    const btnFilterAll = document.getElementById('btn-booking-filter-all');
+    if (btnFilterAll) {
+      btnFilterAll.addEventListener('click', () => {
+        AppStore.setState({ bookingFilterMode: 'all' });
+      });
+    }
   }
 
   /**
@@ -494,6 +507,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function openRequestModal() {
     const activeVehId = AppStore.state.activeVehicleId;
     const user = AppStore.state.currentUser || { name: '김복지', team: '복지사업팀' };
+    const vehicles = AppStore.state.data.Vehicles || [];
+
+    const vehOptions = vehicles.map(v => {
+      const vid = v.vehicle_id || (Array.isArray(v) ? v[0] : '미등록차량');
+      const vmodel = v.model || (Array.isArray(v) ? v[1] : '승합차');
+      return `<option value="${vid}" ${vid === activeVehId ? 'selected' : ''}>🚘 ${vid} (${vmodel})</option>`;
+    }).join('');
 
     modalOverlay.innerHTML = `
       <div class="modal-body glass-panel">
@@ -512,22 +532,36 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <div class="form-group">
+            <label>운전자 성명 * / 동승자 (선택)</label>
+            <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:8px;">
+              <input type="text" name="driver_name" class="form-control" value="${user.name}" placeholder="운전자 성함" required>
+              <input type="text" name="companion" class="form-control" placeholder="예: 김용필 외 2명 또는 이팀장, 박차량">
+            </div>
+          </div>
+
+          <div class="form-group">
             <label>신청 차량 *</label>
             <select name="vehicle_id" class="form-control" required>
-              ${AppStore.state.data.Vehicles.map(v => `<option value="${v.vehicle_id}" ${v.vehicle_id === activeVehId ? 'selected' : ''}>${v.vehicle_id} (${v.model})</option>`).join('')}
+              ${vehOptions || '<option value="미등록">등록된 차량 없음</option>'}
             </select>
           </div>
 
           <div class="form-group">
-            <label>운행 예정일 *</label>
+            <label>📅 운행 예정일 *</label>
             <input type="date" name="drive_date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
           </div>
 
           <div class="form-group">
-            <label>운행 예정 시간 (시작 ~ 종료) *</label>
+            <label>🕒 운행 예정 시간 (시작 ~ 종료) *</label>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              <input type="time" name="start_time" class="form-control" value="09:00" required>
-              <input type="time" name="end_time" class="form-control" value="12:00" required>
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.85rem;">🕒 시작</span>
+                <input type="time" name="start_time" class="form-control" value="09:00" style="padding-left:60px;" required>
+              </div>
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.85rem;">🕒 종료</span>
+                <input type="time" name="end_time" class="form-control" value="12:00" style="padding-left:60px;" required>
+              </div>
             </div>
           </div>
 
@@ -563,21 +597,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      await AppAPI.request('createDriveRequest', {
+      const newReq = {
+        request_id: `REQ-${Date.now()}`,
         applicant_id: user.user_id || '1001',
         applicant_name: user.name,
-        team: user.team,
+        team: user.team || '복지사업팀',
+        driver_name: formData.get('driver_name') || user.name,
+        companion: formData.get('companion') || '',
         vehicle_id,
         drive_date,
         start_time,
         end_time,
         purpose: formData.get('purpose'),
-        approval_status: '확정(우선권)'
+        approval_status: '확정(우선권)',
+        approver_id: '자동확정',
+        created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+      };
+
+      // 1. 로컬 store의 DriveRequests 및 LocalStorage 즉시 반응형 동기화
+      const currentReqs = [newReq, ...(AppStore.state.data.DriveRequests || [])];
+      const updatedData = { ...AppStore.state.data, DriveRequests: currentReqs };
+      AppAPI.saveStorage(updatedData);
+      AppStore.setState({
+        data: updatedData,
+        activeVehicleId: vehicle_id,
+        bookingFilterMode: 'all'
       });
 
+      // 2. 백엔드 GAS 구글 스프레드시트 기록 전송
+      await AppAPI.request('createDriveRequest', newReq);
+
+      // 3. 백엔드 스프레드시트 데이터 최신화
       await AppStore.loadInitialData();
       closeModal();
-      showToast('🎉 차량 운행 신청이 완료되었습니다. (선신청 우선권 확정)');
+      showToast(`🎉 [${vehicle_id}] 차량 운행 신청이 완료되었습니다. (예약 목록 즉시 반영)`);
     });
   }
 
