@@ -7,7 +7,7 @@ const APP_CONFIG = {
   VERSION: 'v1.1.0',
   
   // GAS (Google Apps Script) Web App URL
-  GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycby9-hDOIbxsBL0VuJJVJbZQexTojYuGhJq6crsN2qZTtinVZ1LhfxX1FC9lSFh6CuTXwQ/exec',
+  GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwZaU08pK5PEdjH31rltsL4yEQmDRNoO8mmRy1fDmcgZk3N02Ob4xVnb5vcHpnoUShTZQ/exec',
 
   // GitHub 저장소 정보
   GITHUB_REPO: 'https://github.com/fitsociety-hue/totalcar',
