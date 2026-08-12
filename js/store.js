@@ -419,6 +419,37 @@ const AppStore = {
   },
 
   /**
+   * 운행일지 삭제
+   */
+  async deleteDriveLog(logId) {
+    const updatedLogs = (this.state.data.DriveLogs || []).filter(l => l.log_id !== logId);
+    const updatedData = { ...this.state.data, DriveLogs: updatedLogs };
+
+    AppAPI.saveStorage(updatedData);
+    this.setState({ data: updatedData });
+
+    // 백엔드 삭제 전송
+    await AppAPI.request('deleteDriveLog', { log_id: logId });
+    return true;
+  },
+
+  /**
+   * 운행일지 수정
+   */
+  async updateDriveLog(logData) {
+    const logs = [...(this.state.data.DriveLogs || [])];
+    const idx = logs.findIndex(l => l.log_id === logData.log_id);
+    if (idx !== -1) {
+      logs[idx] = { ...logs[idx], ...logData };
+      const updatedData = { ...this.state.data, DriveLogs: logs };
+      AppAPI.saveStorage(updatedData);
+      this.setState({ data: updatedData });
+    }
+    await AppAPI.request('updateDriveLog', logData);
+    return true;
+  },
+
+  /**
    * 운행 시간 / 차량 변경 협의 요청 전송
    */
   async sendTimeNegotiationRequest(payload) {

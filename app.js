@@ -275,21 +275,28 @@ document.addEventListener('DOMContentLoaded', () => {
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width:25%;">운행일자</th>
-                <th style="width:25%;">운전자</th>
-                <th style="width:30%;">목적지</th>
-                <th style="width:20%;">주행거리</th>
+                <th style="width:20%;">운행일자</th>
+                <th style="width:20%;">운전자</th>
+                <th style="width:25%;">목적지</th>
+                <th style="width:18%;">주행거리</th>
+                <th style="width:17%;">관리</th>
               </tr>
             </thead>
             <tbody>
               ${vehLogs.map(l => `
                 <tr>
                   <td><strong class="nobr">${l.date}</strong></td>
-                  <td><span class="nobr">${l.driver_name || '김복지'}</span></td>
+                  <td><span class="nobr">${l.driver_name || '직원'}</span></td>
                   <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${l.destination}">${l.destination}</td>
-                  <td><strong style="color:var(--accent-gold);" class="nobr">${l.distance_km} km</strong></td>
+                  <td><strong style="color:var(--accent-gold);" class="nobr">${l.distance_km || 0} km</strong></td>
+                  <td>
+                    <div style="display:flex; gap:4px;" class="nobr">
+                      <button class="btn-edit-drivelog btn-secondary" data-id="${l.log_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:var(--accent-gold); color:var(--accent-gold);" title="운행일지 수정">✏️ 수정</button>
+                      <button class="btn-delete-drivelog btn-secondary" data-id="${l.log_id}" style="padding:2px 6px; font-size:0.72rem; width:auto; border-color:rgba(239,68,68,0.4); color:var(--status-rose);" title="운행일지 삭제">🗑️ 삭제</button>
+                    </div>
+                  </td>
                 </tr>
-              `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:20px;">작성된 운행일지가 없습니다.</td></tr>'}
+              `).join('') || '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:20px;">작성된 운행일지가 없습니다.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -465,6 +472,30 @@ document.addEventListener('DOMContentLoaded', () => {
           if (confirm(`🗑️ [${reqToDelete.vehicle_id}] (${reqToDelete.drive_date} ${reqToDelete.start_time}~${reqToDelete.end_time}) 차량 운행 신청을 삭제(취소)하시겠습니까?`)) {
             await AppStore.deleteDriveRequest(reqId);
             showToast(`🗑️ 차량 운행 신청이 취소/삭제되었습니다.`);
+          }
+        }
+        return;
+      }
+
+      // 운행일지 수정 / 삭제 이벤트 위임 핸들러
+      const editLogBtn = e.target.closest('.btn-edit-drivelog');
+      if (editLogBtn) {
+        const logId = editLogBtn.dataset.id;
+        const logToEdit = (AppStore.state.data.DriveLogs || []).find(l => l.log_id === logId);
+        if (logToEdit) {
+          openDriveLogModal(logToEdit);
+        }
+        return;
+      }
+
+      const deleteLogBtn = e.target.closest('.btn-delete-drivelog');
+      if (deleteLogBtn) {
+        const logId = deleteLogBtn.dataset.id;
+        const logToDelete = (AppStore.state.data.DriveLogs || []).find(l => l.log_id === logId);
+        if (logToDelete) {
+          if (confirm(`🗑️ [${logToDelete.date}] (${logToDelete.driver_name}) 운행일지 기록을 삭제하시겠습니까?`)) {
+            await AppStore.deleteDriveLog(logId);
+            showToast(`🗑️ 차량 운행일지가 성공적으로 삭제되었습니다.`);
           }
         }
       }
@@ -759,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function openDriveLogModal() {
+  function openDriveLogModal(logToEdit = null) {
     const activeVeh = AppStore.getActiveVehicle();
     const user = AppStore.state.currentUser || { name: '김용필' };
     const allRequests = AppStore.state.data.DriveRequests || [];
@@ -775,22 +806,32 @@ document.addEventListener('DOMContentLoaded', () => {
       .filter(l => String(l.vehicle_id).trim() === String(activeVeh.vehicle_id).trim())
       .sort((a, b) => (Number(b.end_km) || 0) - (Number(a.end_km) || 0));
 
-    const lastEndKm = vehicleLogs.length > 0 && Number(vehicleLogs[0].end_km) > 0
-      ? Number(vehicleLogs[0].end_km)
-      : (activeVeh.current_mileage || 0);
+    const lastEndKm = logToEdit
+      ? Number(logToEdit.start_km) || 0
+      : (vehicleLogs.length > 0 && Number(vehicleLogs[0].end_km) > 0 ? Number(vehicleLogs[0].end_km) : (activeVeh.current_mileage || 0));
+
+    const defaultDate = logToEdit ? logToEdit.date : new Date().toISOString().split('T')[0];
+    const defaultDriver = logToEdit ? logToEdit.driver_name : user.name;
+    const defaultDepart = logToEdit ? logToEdit.depart_time : '16:00';
+    const defaultArrival = logToEdit ? logToEdit.arrival_time : '16:45';
+    const defaultDest = logToEdit ? logToEdit.destination : '';
+    const defaultPurpose = logToEdit ? logToEdit.purpose : '';
+    const defaultEndKm = logToEdit ? logToEdit.end_km : (lastEndKm > 0 ? lastEndKm + 25 : 25);
 
     modalOverlay.innerHTML = `
       <div class="modal-body glass-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--border-glass); padding-bottom:12px;">
           <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
-            <span>📑</span> 차량 운행일지 작성
+            <span>📑</span> ${logToEdit ? '✏️ 차량 운행일지 수정' : '차량 운행일지 작성'}
           </h3>
           <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
         </div>
 
         <form id="drivelog-submit-form" style="display:flex; flex-direction:column; gap:20px;">
+          <input type="hidden" name="log_id" value="${logToEdit ? logToEdit.log_id : ''}">
           <input type="hidden" name="vehicle_id" value="${activeVeh.vehicle_id}">
 
+          ${!logToEdit ? `
           <div class="form-group">
             <label style="color:var(--status-emerald); font-weight:700;">📋 차량 운행 신청서 불러오기 (선택 시 자동채움)</label>
             <select name="request_id" class="form-control" id="linked-request-select" style="border-color:var(--status-emerald); background:rgba(16,185,129,0.08);">
@@ -808,12 +849,13 @@ document.addEventListener('DOMContentLoaded', () => {
               `).join('')}
             </select>
           </div>
+          ` : `<input type="hidden" name="request_id" value="${logToEdit.request_id || ''}">`}
 
           <div class="form-group">
             <label>운행일자 / 운전자 *</label>
             <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:12px;">
-              <input type="date" name="date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
-              <input type="text" name="driver_name" id="drivelog-driver-name" class="form-control" value="${user.name}" required placeholder="운전자 성명">
+              <input type="date" name="date" class="form-control" value="${defaultDate}" required>
+              <input type="text" name="driver_name" id="drivelog-driver-name" class="form-control" value="${defaultDriver}" required placeholder="운전자 성명">
             </div>
           </div>
 
@@ -822,11 +864,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div style="position:relative; display:flex; align-items:center;">
                 <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.82rem;">🕒 출발</span>
-                <input type="time" name="depart_time" id="drivelog-depart-time" class="form-control" value="16:00" style="padding-left:56px;" required>
+                <input type="time" name="depart_time" id="drivelog-depart-time" class="form-control" value="${defaultDepart}" style="padding-left:56px;" required>
               </div>
               <div style="position:relative; display:flex; align-items:center;">
                 <span style="position:absolute; left:10px; color:var(--accent-gold); font-weight:700; pointer-events:none; font-size:0.82rem;">🕒 도착</span>
-                <input type="time" name="arrival_time" id="drivelog-arrival-time" class="form-control" value="16:45" style="padding-left:56px;" required>
+                <input type="time" name="arrival_time" id="drivelog-arrival-time" class="form-control" value="${defaultArrival}" style="padding-left:56px;" required>
               </div>
             </div>
           </div>
@@ -834,8 +876,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="form-group">
             <label>목적지 / 운행목적 & 동승자</label>
             <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:12px;">
-              <input type="text" name="destination" id="drivelog-destination" class="form-control" placeholder="목적지 (예: 강동구청)" required>
-              <input type="text" name="purpose" id="drivelog-purpose" class="form-control" placeholder="운행목적 (예: 서류 제출)" required>
+              <input type="text" name="destination" id="drivelog-destination" class="form-control" value="${defaultDest}" placeholder="목적지 (예: 강동구청)" required>
+              <input type="text" name="purpose" id="drivelog-purpose" class="form-control" value="${defaultPurpose}" placeholder="운행목적 (예: 서류 제출)" required>
             </div>
           </div>
 
@@ -849,16 +891,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div>
                 <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">출발 km (종전 최종 기록)</span>
-                <input type="number" id="start_km" name="start_km" class="form-control" value="${lastEndKm}" required readonly style="background:rgba(255,255,255,0.05); color:var(--text-muted);">
+                <input type="number" id="start_km" name="start_km" class="form-control" value="${lastEndKm}" required style="background:rgba(255,255,255,0.05);">
               </div>
               <div>
                 <span style="font-size:0.75rem; color:var(--accent-gold); display:block; margin-bottom:4px; font-weight:700;">도착 km (복귀 후 직접 입력) *</span>
-                <input type="number" id="end_km" name="end_km" class="form-control" value="${lastEndKm > 0 ? lastEndKm + 25 : 25}" required placeholder="복귀 후 누적 km" style="border-color:var(--accent-gold);">
+                <input type="number" id="end_km" name="end_km" class="form-control" value="${defaultEndKm}" required placeholder="복귀 후 누적 km" style="border-color:var(--accent-gold);">
               </div>
             </div>
           </div>
 
-          <button type="submit" class="btn-primary" style="margin-top:8px; padding:14px; font-size:1rem;">📑 차량 운행일지 저장</button>
+          <button type="submit" class="btn-primary" style="margin-top:8px; padding:14px; font-size:1rem;">${logToEdit ? '✏️ 운행일지 수정 저장' : '📑 차량 운행일지 저장'}</button>
         </form>
       </div>
     `;
@@ -870,7 +912,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const endKmInput = document.getElementById('end_km');
     const distanceBadge = document.getElementById('calculated-distance-badge');
 
-    // 주행거리 실시간 연산 헬퍼
     const updateCalculatedDistance = () => {
       const startVal = Number(startKmInput.value) || 0;
       const endVal = Number(endKmInput.value) || 0;
@@ -881,11 +922,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     updateCalculatedDistance();
-    if (endKmInput) {
-      endKmInput.addEventListener('input', updateCalculatedDistance);
-    }
+    if (endKmInput) endKmInput.addEventListener('input', updateCalculatedDistance);
+    if (startKmInput) startKmInput.addEventListener('input', updateCalculatedDistance);
 
-    // 신청서 불러오기 이벤트 핸들러
     if (linkedSelect && form) {
       linkedSelect.addEventListener('change', () => {
         const opt = linkedSelect.selectedOptions[0];
@@ -916,6 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
+      const logId = formData.get('log_id');
       const start_km = Number(formData.get('start_km'));
       const end_km = Number(formData.get('end_km'));
       const distance_km = end_km - start_km;
@@ -925,9 +965,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      setFormSavingState(form, true, '운행일지 저장 중...');
+      setFormSavingState(form, true, logId ? '운행일지 수정 중...' : '운행일지 저장 중...');
       try {
-        await AppAPI.request('createDriveLog', {
+        const payload = {
+          log_id: logId || undefined,
           vehicle_id: activeVeh.vehicle_id,
           date: formData.get('date'),
           driver_id: user.user_id || '1001',
@@ -940,12 +981,18 @@ document.addEventListener('DOMContentLoaded', () => {
           end_km,
           distance_km,
           request_id: formData.get('request_id') || ''
-        });
+        };
+
+        if (logId) {
+          await AppStore.updateDriveLog(payload);
+          showToast(`✏️ 차량 운행일지가 수정되었습니다. (주행거리: ${distance_km}km)`);
+        } else {
+          await AppAPI.request('createDriveLog', payload);
+          showToast(`📑 차량 운행일지가 정상적으로 저장되었습니다! (주행거리: ${distance_km}km)`);
+        }
 
         await AppStore.loadInitialData();
         closeModal();
-        const linkedMsg = formData.get('request_id') ? ` (신청 ${formData.get('request_id')} 연동)` : '';
-        showToast(`📑 차량 운행일지가 정상적으로 저장되었습니다! (주행거리: ${distance_km}km)${linkedMsg}`);
       } finally {
         setFormSavingState(form, false);
       }

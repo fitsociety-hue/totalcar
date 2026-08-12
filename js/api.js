@@ -148,13 +148,36 @@ const AppAPI = {
         };
         db.DriveLogs.unshift(newLog);
 
-        // 차량 누적 거리 자동 갱신
-        const vehicle = db.Vehicles.find(v => v.vehicle_id === payload.vehicle_id);
-        if (vehicle && payload.end_km > vehicle.current_mileage) {
-          vehicle.current_mileage = Number(payload.end_km);
+        // 차량 현재 누적 거리 업데이트
+        const vehIndex = db.Vehicles.findIndex(v => v.vehicle_id === payload.vehicle_id);
+        if (vehIndex !== -1 && payload.end_km > db.Vehicles[vehIndex].current_mileage) {
+          db.Vehicles[vehIndex].current_mileage = payload.end_km;
         }
         this.saveStorage(db);
         return newLog;
+      }
+
+      case 'updateDriveLog': {
+        const logIndex = (db.DriveLogs || []).findIndex(l => l.log_id === payload.log_id);
+        if (logIndex !== -1) {
+          db.DriveLogs[logIndex] = {
+            ...db.DriveLogs[logIndex],
+            ...payload
+          };
+          const vehIndex = db.Vehicles.findIndex(v => v.vehicle_id === payload.vehicle_id);
+          if (vehIndex !== -1 && payload.end_km > db.Vehicles[vehIndex].current_mileage) {
+            db.Vehicles[vehIndex].current_mileage = payload.end_km;
+          }
+          this.saveStorage(db);
+          return db.DriveLogs[logIndex];
+        }
+        return null;
+      }
+
+      case 'deleteDriveLog': {
+        db.DriveLogs = (db.DriveLogs || []).filter(l => l.log_id !== payload.log_id);
+        this.saveStorage(db);
+        return { success: true, log_id: payload.log_id };
       }
 
       case 'createFuelLog': {

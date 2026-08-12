@@ -44,6 +44,14 @@ function doPost(e) {
         resultData = addDriveLog(ss, contents);
         break;
 
+      case 'updateDriveLog':
+        resultData = updateDriveLog(ss, contents);
+        break;
+
+      case 'deleteDriveLog':
+        resultData = deleteDriveLog(ss, contents);
+        break;
+
       case 'createFuelLog':
         resultData = addFuelLog(ss, contents);
         break;
