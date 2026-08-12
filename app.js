@@ -305,28 +305,107 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderMaintenanceAndAccidentsTab(data, vehicleId) {
-    const fuelLogs = data.Fuel.filter(f => f.vehicle_id === vehicleId);
-    const maintLogs = data.Maintenance.filter(m => m.vehicle_id === vehicleId);
-    const accLogs = data.Accidents.filter(a => a.vehicle_id === vehicleId);
+    const fuelLogs = (data.Fuel || []).filter(f => String(f.vehicle_id).trim() === String(vehicleId).trim());
+    const maintLogs = (data.Maintenance || []).filter(m => String(m.vehicle_id).trim() === String(vehicleId).trim());
+    const accLogs = (data.Accidents || []).filter(a => String(a.vehicle_id).trim() === String(vehicleId).trim());
+
+    // 1. 주유 기록 테이블 행
+    const fuelRowsHTML = fuelLogs.map(f => {
+      const amount = Number(f.amount_won) || 0;
+      const liter = Number(f.liter) || 0;
+      const unitPrice = Number(f.unit_price) || (liter > 0 ? Math.round(amount / liter) : 0);
+      return `
+        <tr>
+          <td><strong class="nobr">${f.date}</strong></td>
+          <td><span class="nobr" style="color:var(--text-main); font-weight:600;">⛽ ${f.station || '주유소'}</span></td>
+          <td><strong style="color:var(--accent-gold);" class="nobr">${amount.toLocaleString()}원 <small style="color:var(--text-muted); font-weight:normal;">(${liter}L)</small></strong></td>
+          <td><span class="nobr" style="color:var(--text-muted); font-size:0.8rem;">${unitPrice.toLocaleString()}원/L</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    // 2. 사고 경위서 & 정비 이력 통합 목록 행
+    const combinedAccMaint = [
+      ...accLogs.map(a => ({ type: '사고경위서', date: a.date, title: `${a.accident_role || '사고'} (${a.location || '장소미기재'})`, detail: a.description || '내용 없음', driver: a.driver_name || '운전자', extra: a.counterpart_name ? `상대: ${a.counterpart_name}` : '단독사고', isAccident: true })),
+      ...maintLogs.map(m => ({ type: '정비/점검', date: m.in_date || m.date, title: m.reason || '정비점검', detail: m.detail || '점검완료', driver: '정비업체', extra: m.cost_total ? `${Number(m.cost_total).toLocaleString()}원` : '점검완료', isAccident: false }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const accMaintRowsHTML = combinedAccMaint.map(item => {
+      return `
+        <tr>
+          <td>
+            <span class="badge nobr" style="background:${item.isAccident ? 'rgba(239,68,68,0.15)' : 'rgba(52,152,219,0.15)'}; color:${item.isAccident ? '#EF4444' : '#3498db'}; border:1px solid ${item.isAccident ? 'rgba(239,68,68,0.3)' : 'rgba(52,152,219,0.3)'};">
+              ${item.type}
+            </span>
+          </td>
+          <td>
+            <span class="nobr"><strong>${item.date}</strong></span><br>
+            <span style="font-size:0.75rem; color:var(--text-muted);" class="nobr">👤 ${item.driver}</span>
+          </td>
+          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis;" title="${item.title} - ${item.detail}">
+            <strong style="color:var(--text-main); font-size:0.85rem;">${item.title}</strong><br>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${item.detail}</span>
+          </td>
+          <td>
+            <span class="nobr" style="font-size:0.8rem; color:${item.isAccident ? 'var(--status-rose)' : 'var(--accent-gold)'}; font-weight:600;">
+              ${item.extra}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     return `
-      <div class="glass-panel" style="padding:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;"><span>🛠️</span> 차계부 및 정비/사고 이력</h3>
-          <div style="display:flex; gap:6px;">
-            <button id="btn-open-accident-modal" class="btn-secondary btn-emergency" style="padding:4px 10px; font-size:0.75rem; width:auto;">🚨 사고 경위서 작성 (v1.1)</button>
-            <button id="btn-open-fuel-modal" class="btn-primary" style="padding:4px 10px; font-size:0.75rem; width:auto;">+ 주유 입력</button>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <!-- 섹션 1: ⛽ 차량 주유 및 연비 차계부 -->
+        <div class="glass-panel" style="padding:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <h3 style="font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:6px; color:var(--accent-gold);">
+              <span>⛽</span> 차량 주유 및 연비 기록 <small style="color:var(--text-muted); font-weight:normal;">(${fuelLogs.length}건)</small>
+            </h3>
+            <button id="btn-open-fuel-modal" class="btn-primary" style="padding:6px 14px; font-size:0.8rem; width:auto;">+ 주유 입력</button>
+          </div>
+
+          <div class="custom-table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th style="width:25%;">주유일자</th>
+                  <th style="width:30%;">주유소명</th>
+                  <th style="width:25%;">주유금액 (주유량)</th>
+                  <th style="width:20%;">단가(원/L)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${fuelRowsHTML || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:20px;">등록된 주유 기록이 없습니다.</td></tr>'}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
-          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
-            <div style="font-size:0.75rem; color:var(--text-muted);">최근 주유 기록 (${fuelLogs.length}건)</div>
-            ${fuelLogs.length > 0 ? `<div style="font-size:0.95rem; font-weight:700; color:var(--accent-gold); margin-top:4px;" class="nobr">${fuelLogs[0].station} - ${fuelLogs[0].amount_won.toLocaleString()}원</div>` : '<div style="font-size:0.8rem; color:var(--text-dim);">기록 없음</div>'}
+        <!-- 섹션 2: 🚨 사고 경위서 및 정비/점검 이력 -->
+        <div class="glass-panel" style="padding:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <h3 style="font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:6px; color:var(--status-rose);">
+              <span>🚨</span> 사고 경위서 및 정비/점검 이력 <small style="color:var(--text-muted); font-weight:normal;">(${combinedAccMaint.length}건)</small>
+            </h3>
+            <button id="btn-open-accident-modal" class="btn-secondary btn-emergency" style="padding:6px 12px; font-size:0.78rem; width:auto; border-color:rgba(239,68,68,0.4); color:var(--status-rose);">🚨 사고 경위서 작성 (v1.1)</button>
           </div>
-          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
-            <div style="font-size:0.75rem; color:var(--text-muted);">등록된 사고 경위서 (v1.1)</div>
-            ${accLogs.length > 0 ? `<div style="font-size:0.9rem; font-weight:700; color:var(--status-rose); margin-top:4px;" class="nobr">${accLogs[0].accident_role}사고 (${accLogs[0].date})</div>` : '<div style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">무사고 차량</div>'}
+
+          <div class="custom-table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th style="width:18%;">구분</th>
+                  <th style="width:22%;">일자/운전자</th>
+                  <th style="width:38%;">사고 및 정비 상세 내용</th>
+                  <th style="width:22%;">상태 / 상대방</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${accMaintRowsHTML || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim); padding:20px;">등록된 사고 경위서 및 정비 내역이 없습니다. (무사고 차량)</td></tr>'}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
