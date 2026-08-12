@@ -976,6 +976,107 @@ const AppComponents = {
         </form>
       </div>
     `;
+  },
+
+  /**
+   * 첨부 이미지 벤치마킹: 상단 둥근 캡슐 칩 스크롤 바
+   */
+  renderQuickChipsBar() {
+    return `
+      <div class="quick-chips-container">
+        <button class="chip-btn" id="chip-btn-report">
+          <span>📧</span> 내 차 리포트
+        </button>
+        <button class="chip-btn" id="chip-btn-request">
+          <span>🚗</span> 운행 신청
+        </button>
+        <button class="chip-btn" id="chip-btn-drivelog">
+          <span>✏️</span> 일지 작성
+        </button>
+        <button class="chip-btn" id="chip-btn-fuel">
+          <span>⛽</span> 주유 입력
+        </button>
+        <button class="chip-btn" id="chip-btn-stats">
+          <span>📊</span> 월별 통계
+        </button>
+      </div>
+    `;
+  },
+
+  /**
+   * 첨부 이미지 벤치마킹: 3D 차량 메인 히어로 카드 (XM3 마이르노/카닥 벤치마킹)
+   */
+  renderVehicleHeroCard(vehicle) {
+    const vehId = vehicle ? vehicle.vehicle_id : '365라 1271';
+    const model = vehicle ? vehicle.model : '카니발 9인승';
+    const mileage = vehicle ? (Number(vehicle.current_mileage) || 77622).toLocaleString() : '77,622';
+
+    return `
+      <div class="hero-vehicle-card">
+        <div class="hero-vehicle-header">
+          <div>
+            <div class="hero-vehicle-title">${vehId}</div>
+            <div class="hero-vehicle-sub">${model} · 스마트 24시간 실시간 통합 관리 중</div>
+          </div>
+          <div class="hero-vehicle-badge-brand" title="${APP_CONFIG.ORGANIZATION_NAME}">
+            ❖
+          </div>
+        </div>
+
+        <div class="hero-vehicle-content">
+          <button class="hero-vehicle-btn-info" id="btn-hero-veh-info">
+            내 차 정보
+          </button>
+          <div style="text-align:right;">
+            <span style="font-size:1.8rem; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));">🚘</span>
+          </div>
+        </div>
+
+        <div class="hero-vehicle-footer" id="btn-hero-mileage-click" style="cursor:pointer;">
+          <span style="color:var(--text-muted);">현재 누적주행거리</span>
+          <strong style="color:var(--accent-gold); font-size:1.1rem; display:flex; align-items:center; gap:4px;">
+            ${mileage} km <span style="font-size:0.9rem; color:var(--text-muted);">›</span>
+          </strong>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * 첨부 이미지 벤치마킹: 4종 퀵 서비스 그리드 (정비소 예약 / 운행 퀵 메뉴)
+   */
+  renderServiceQuickGrid() {
+    return `
+      <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main);">차량 퀵 서비스 메뉴</h4>
+        <span style="font-size:0.75rem; color:var(--text-muted);">전체보기 ›</span>
+      </div>
+      <div class="service-quick-grid">
+        <div class="service-card" id="quick-service-request">
+          <span class="service-discount-tag" style="background:var(--status-rose);">실시간</span>
+          <div class="service-icon-box" style="background:rgba(239, 68, 68, 0.15); color:#EF4444;">🚘</div>
+          <div class="service-title">운행 신청</div>
+        </div>
+
+        <div class="service-card" id="quick-service-drivelog">
+          <span class="service-discount-tag" style="background:var(--status-emerald);">기록작성</span>
+          <div class="service-icon-box" style="background:rgba(16, 185, 129, 0.15); color:#10B981;">📑</div>
+          <div class="service-title">운행 일지</div>
+        </div>
+
+        <div class="service-card" id="quick-service-fuel">
+          <span class="service-discount-tag" style="background:var(--accent-gold); color:#000;">차계부</span>
+          <div class="service-icon-box" style="background:rgba(229, 169, 60, 0.15); color:var(--accent-gold);">⛽</div>
+          <div class="service-title">주유 입력</div>
+        </div>
+
+        <div class="service-card" id="quick-service-accident">
+          <span class="service-discount-tag" style="background:#6366F1;">긴급24h</span>
+          <div class="service-icon-box" style="background:rgba(99, 102, 241, 0.15); color:#6366F1;">🚨</div>
+          <div class="service-title">사고 경위서</div>
+        </div>
+      </div>
+    `;
   }
 };
 

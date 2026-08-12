@@ -172,6 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const summary = AppStore.getVehicleSummary(activeVehicleId);
         const insuranceAlerts = AppStore.getInsuranceAlerts();
         mobileContent.innerHTML = `
+          ${AppComponents.renderQuickChipsBar()}
+          ${AppComponents.renderVehicleHeroCard(activeVehicle)}
+          ${AppComponents.renderServiceQuickGrid()}
           ${AppComponents.renderVehicleVisualizer(activeVehicle, data.Vehicles)}
           ${AppComponents.renderIntegratedSummary(summary, insuranceAlerts)}
           ${AppComponents.renderDigitalExtras(activeVehicle, insurance, summary.todayRequestsCount || 0)}
@@ -462,6 +465,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnRep = document.getElementById('btn-open-monthly-report');
     if (btnRep) btnRep.addEventListener('click', openMonthlyReportModal);
+
+    // 1. 상단 캡슐 칩 메뉴 클릭 이벤트
+    const chipReq = document.getElementById('chip-btn-request');
+    if (chipReq) chipReq.addEventListener('click', openRequestModal);
+    const chipLog = document.getElementById('chip-btn-drivelog');
+    if (chipLog) chipLog.addEventListener('click', openDriveLogModal);
+    const chipFuel = document.getElementById('chip-btn-fuel');
+    if (chipFuel) chipFuel.addEventListener('click', openFuelModal);
+    const chipReport = document.getElementById('chip-btn-report');
+    if (chipReport) chipReport.addEventListener('click', openMonthlyReportModal);
+    const chipStats = document.getElementById('chip-btn-stats');
+    if (chipStats) chipStats.addEventListener('click', openMonthlyReportModal);
+
+    // 2. 4종 퀵 서비스 그리드 클릭 이벤트
+    const qReq = document.getElementById('quick-service-request');
+    if (qReq) qReq.addEventListener('click', openRequestModal);
+    const qLog = document.getElementById('quick-service-drivelog');
+    if (qLog) qLog.addEventListener('click', openDriveLogModal);
+    const qFuel = document.getElementById('quick-service-fuel');
+    if (qFuel) qFuel.addEventListener('click', openFuelModal);
+    const qAcc = document.getElementById('quick-service-accident');
+    if (qAcc) qAcc.addEventListener('click', openAccidentModal);
+
+    // 3. 메인 히어로 카드 버튼
+    const btnHeroInfo = document.getElementById('btn-hero-veh-info');
+    if (btnHeroInfo) btnHeroInfo.addEventListener('click', () => openVehicleModal(AppStore.getActiveVehicle()));
+    const btnHeroMil = document.getElementById('btn-hero-mileage-click');
+    if (btnHeroMil) btnHeroMil.addEventListener('click', () => openVehicleModal(AppStore.getActiveVehicle()));
 
     // 차량, 하이패스, 보험 등록 및 관리 버튼 핸들러
     const btnAddVeh = document.getElementById('btn-open-add-vehicle-modal');

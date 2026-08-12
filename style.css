@@ -907,3 +907,237 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     margin: 0 !important;
   }
 }
+
+/* ==========================================================================
+   5. 첨부 이미지 벤치마킹 모던 프리미엄 글래스모피즘 UI/UX 컴포넌트
+   ========================================================================== */
+
+/* 상단 캡슐 칩 가로 스크롤 메뉴 바 */
+.quick-chips-container {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-chips-container::-webkit-scrollbar {
+  display: none;
+}
+
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: var(--transition-fast);
+}
+
+.chip-btn:hover, .chip-btn:active {
+  background: rgba(229, 169, 60, 0.2);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(229, 169, 60, 0.2);
+}
+
+/* 3D 메인 차량 히어로 카드 (XM3 마이르노/카닥 벤치마킹) */
+.hero-vehicle-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(30, 36, 50, 0.95) 0%, rgba(18, 22, 32, 0.98) 100%);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: var(--transition-smooth);
+}
+
+.hero-vehicle-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(229, 169, 60, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-vehicle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.hero-vehicle-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.hero-vehicle-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.hero-vehicle-badge-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 1.4rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.hero-vehicle-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.hero-vehicle-btn-info {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.hero-vehicle-btn-info:hover {
+  background: var(--accent-gold);
+  color: #000;
+  border-color: var(--accent-gold);
+}
+
+.hero-vehicle-img {
+  width: 140px;
+  height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+  transition: var(--transition-smooth);
+}
+
+.hero-vehicle-card:hover .hero-vehicle-img {
+  transform: scale(1.06) translateY(-2px);
+}
+
+.hero-vehicle-footer {
+  background: rgba(0, 0, 0, 0.35);
+  margin: 14px -22px -22px -22px;
+  padding: 14px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.88rem;
+}
+
+/* 4종 퀵 서비스 그리드 (정비소 예약 / 운행 퀵 메뉴) */
+.service-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.service-card {
+  background: rgba(24, 28, 40, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  backdrop-filter: blur(16px);
+  position: relative;
+}
+
+.service-card:hover, .service-card:active {
+  background: rgba(33, 40, 58, 0.9);
+  border-color: var(--accent-gold);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.service-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.service-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.service-discount-tag {
+  position: absolute;
+  top: -8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* 모바일 전용 플로팅 작성 FAB 버튼 */
+.floating-fab-btn {
+  position: fixed;
+  bottom: 84px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-gold) 0%, #F5B842 100%);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 8px 24px rgba(229, 169, 60, 0.5);
+  border: none;
+  cursor: pointer;
+  z-index: 999;
+  transition: var(--transition-fast);
+}
+
+.floating-fab-btn:active {
+  transform: scale(0.92);
+}
