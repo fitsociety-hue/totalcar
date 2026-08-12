@@ -48,6 +48,10 @@ const AppStore = {
         ? { ...MOCK_DATA, ...fetched }
         : MOCK_DATA;
 
+      if (validData && Array.isArray(validData.DriveRequests)) {
+        validData.DriveRequests = this.deduplicateDriveRequests(validData.DriveRequests);
+      }
+
       const users = validData.Users || MOCK_DATA.Users;
       
       // LocalStorage 저장된 세션 유저 복원
@@ -63,7 +67,7 @@ const AppStore = {
       }
 
       const defaultUser = restoredUser || null;
-      const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '';
+      const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '365라 1271';
       
       this.setState({
         data: validData,
@@ -339,27 +343,61 @@ const AppStore = {
   },
 
   /**
-   * 중복 예약 검증 함수 (핵심 보완 요구사항)
+   * DriveRequests 중복 데이터 자동 정돈 (Deduplication)
+   */
+  deduplicateDriveRequests(requests = []) {
+    const seen = new Set();
+    const result = [];
+
+    requests.forEach(req => {
+      if (!req) return;
+      const vid = String(req.vehicle_id || '').trim();
+      const date = String(req.drive_date || '').trim();
+      const start = String(req.start_time || '').trim();
+      const end = String(req.end_time || '').trim();
+      const key = `${vid}_${date}_${start}_${end}`;
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(req);
+      }
+    });
+
+    return result;
+  },
+
+  /**
+   * 중복 예약 검증 함수 (분 단위 100% 정밀 비교)
    * @param {string} vehicle_id 차량번호
    * @param {string} drive_date 운행일자 (YYYY-MM-DD)
    * @param {string} start_time (HH:MM)
    * @param {string} end_time (HH:MM)
    * @param {string} [excludeReqId] 제외할 신청 ID
-   * @returns {boolean} 중복 존재 여부 (true=중복됨, false=예약가능)
+   * @returns {Object|null} 중복된 기존 예약 객체 또는 null
    */
   checkBookingConflict(vehicle_id, drive_date, start_time, end_time, excludeReqId = null) {
     const requests = this.state.data.DriveRequests || [];
-    
-    const conflict = requests.find(req => {
-      if (req.vehicle_id !== vehicle_id) return false;
-      if (req.drive_date !== drive_date) return false;
-      if (req.approval_status === '반려') return false;
-      if (excludeReqId && req.request_id === excludeReqId) return false;
 
-      // 시간대 중첩 확인 로직 (StartA < EndB && EndA > StartB)
-      const reqStart = req.start_time;
-      const reqEnd = req.end_time;
-      return (start_time < reqEnd && end_time > reqStart);
+    const toMinutes = (timeStr) => {
+      if (!timeStr) return 0;
+      const parts = String(timeStr).split(':');
+      return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+    };
+
+    const newStart = toMinutes(start_time);
+    const newEnd = toMinutes(end_time);
+
+    const conflict = requests.find(req => {
+      if (excludeReqId && req.request_id === excludeReqId) return false;
+      if (String(req.vehicle_id).trim() !== String(vehicle_id).trim()) return false;
+      if (String(req.drive_date).trim() !== String(drive_date).trim()) return false;
+      if (req.approval_status === '반려') return false;
+
+      const reqStart = toMinutes(req.start_time);
+      const reqEnd = toMinutes(req.end_time);
+
+      // 시간대 겹침 판단: (newStart < reqEnd && newEnd > reqStart)
+      return (newStart < reqEnd && newEnd > reqStart);
     });
 
     return conflict || null;

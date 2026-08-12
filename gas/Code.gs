@@ -169,6 +169,31 @@ function addDriveRequest(ss, data) {
     sheet.appendRow(DEFAULT_HEADERS.DriveRequests);
   }
 
+  // 서버 2중 시간대 중복 검증 (동일 차량, 동일 날짜 겹침 차단)
+  var toMinutes = function(t) {
+    if (!t) return 0;
+    var p = String(t).split(':');
+    return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+  };
+  var nStart = toMinutes(data.start_time);
+  var nEnd = toMinutes(data.end_time);
+
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    if (!row || row.length < 10) continue;
+    var rVeh = String(row[6] || row[4] || '').trim(); // vehicle_id
+    var rDate = String(row[7] || row[5] || '').trim(); // drive_date
+    var rStart = toMinutes(row[8] || row[6] || '');
+    var rEnd = toMinutes(row[9] || row[7] || '');
+    var rStatus = String(row[11] || row[9] || '');
+
+    if (rVeh === String(data.vehicle_id).trim() && rDate === String(data.drive_date).trim() && rStatus !== '반려') {
+      if (nStart < rEnd && nEnd > rStart) {
+        return { status: 'error', message: '선택하신 시간대에 해당 차량의 예약이 이미 존재합니다. (중복 신청 차단)' };
+      }
+    }
+  }
+
   var reqId = 'REQ-' + Date.now();
   var nowStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
 
