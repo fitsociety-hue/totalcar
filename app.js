@@ -447,6 +447,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
+   * 공통 폼 제출 시 "⏳ 저장 중..." 인디케이터 처리 및 버튼 비활성화 헬퍼
+   */
+  function setFormSavingState(formElement, isSaving, customSavingText = '저장 중입니다...') {
+    if (!formElement) return;
+    const submitBtn = formElement.querySelector('button[type="submit"]');
+    if (!submitBtn) return;
+
+    if (isSaving) {
+      if (!submitBtn.dataset.originalText) {
+        submitBtn.dataset.originalText = submitBtn.innerHTML;
+      }
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.75';
+      submitBtn.style.cursor = 'not-allowed';
+      submitBtn.innerHTML = `<span style="display:inline-block; animation:spin 1s infinite linear;">⏳</span> ${customSavingText}`;
+      showToast(`⏳ 구글 스프레드시트에 저장하고 있습니다... 잠시만 기다려 주십시오.`);
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+      if (submitBtn.dataset.originalText) {
+        submitBtn.innerHTML = submitBtn.dataset.originalText;
+      }
+    }
+  }
+
+  /**
    * 모달 오픈 함수들
    */
   function openVehicleModal(vehicleToEdit = null) {
@@ -487,19 +514,24 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        if (vehicleToEdit) {
-          await AppStore.updateVehicle(vehicleToEdit.vehicle_id, vehData, insData);
-          showToast(`✏️ 차량 [${vehData.vehicle_id}] 정보 및 하이패스/보험 연동이 수정되었습니다.`);
-        } else {
-          const res = await AppStore.createVehicle(vehData, insData);
-          if (!res.success) {
-            showToast(res.message, 'error');
-            return;
+        setFormSavingState(form, true, '차량 정보 저장 중...');
+        try {
+          if (vehicleToEdit) {
+            await AppStore.updateVehicle(vehicleToEdit.vehicle_id, vehData, insData);
+            closeModal();
+            showToast(`✏️ 차량 [${vehData.vehicle_id}] 정보 및 하이패스/보험 연동이 수정되었습니다.`);
+          } else {
+            const res = await AppStore.createVehicle(vehData, insData);
+            if (!res.success) {
+              showToast(res.message, 'error');
+              return;
+            }
+            closeModal();
+            showToast(`🎉 신규 차량 [${vehData.vehicle_id}] (${vehData.model}) 및 하이패스/보험 연동 완료!`);
           }
-          showToast(`🎉 신규 차량 [${vehData.vehicle_id}] (${vehData.model}) 및 하이패스/보험 연동 완료!`);
+        } finally {
+          setFormSavingState(form, false);
         }
-
-        closeModal();
       });
     }
   }
@@ -597,40 +629,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const newReq = {
-        request_id: `REQ-${Date.now()}`,
-        applicant_id: user.user_id || '1001',
-        applicant_name: user.name,
-        team: user.team || '복지사업팀',
-        driver_name: formData.get('driver_name') || user.name,
-        companion: formData.get('companion') || '',
-        vehicle_id,
-        drive_date,
-        start_time,
-        end_time,
-        purpose: formData.get('purpose'),
-        approval_status: '확정(우선권)',
-        approver_id: '자동확정',
-        created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
-      };
+      setFormSavingState(form, true, '운행 신청 저장 중...');
+      try {
+        const newReq = {
+          request_id: `REQ-${Date.now()}`,
+          applicant_id: user.user_id || '1001',
+          applicant_name: user.name,
+          team: user.team || '복지사업팀',
+          driver_name: formData.get('driver_name') || user.name,
+          companion: formData.get('companion') || '',
+          vehicle_id,
+          drive_date,
+          start_time,
+          end_time,
+          purpose: formData.get('purpose'),
+          approval_status: '확정(우선권)',
+          approver_id: '자동확정',
+          created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+        };
 
-      // 1. 로컬 store의 DriveRequests 및 LocalStorage 즉시 반응형 동기화
-      const currentReqs = [newReq, ...(AppStore.state.data.DriveRequests || [])];
-      const updatedData = { ...AppStore.state.data, DriveRequests: currentReqs };
-      AppAPI.saveStorage(updatedData);
-      AppStore.setState({
-        data: updatedData,
-        activeVehicleId: vehicle_id,
-        bookingFilterMode: 'all'
-      });
+        // 1. 로컬 store의 DriveRequests 및 LocalStorage 즉시 반응형 동기화
+        const currentReqs = [newReq, ...(AppStore.state.data.DriveRequests || [])];
+        const updatedData = { ...AppStore.state.data, DriveRequests: currentReqs };
+        AppAPI.saveStorage(updatedData);
+        AppStore.setState({
+          data: updatedData,
+          activeVehicleId: vehicle_id,
+          bookingFilterMode: 'all'
+        });
 
-      // 2. 백엔드 GAS 구글 스프레드시트 기록 전송
-      await AppAPI.request('createDriveRequest', newReq);
+        // 2. 백엔드 GAS 구글 스프레드시트 기록 전송
+        await AppAPI.request('createDriveRequest', newReq);
 
-      // 3. 백엔드 스프레드시트 데이터 최신화
-      await AppStore.loadInitialData();
-      closeModal();
-      showToast(`🎉 [${vehicle_id}] 차량 운행 신청이 완료되었습니다. (예약 목록 즉시 반영)`);
+        // 3. 백엔드 데이터 최신화
+        await AppStore.loadInitialData();
+        closeModal();
+        showToast(`🎉 [${vehicle_id}] 차량 운행 신청이 성공적으로 완료되었습니다.`);
+      } finally {
+        setFormSavingState(form, false);
+      }
     });
   }
 
@@ -757,25 +794,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const end_km = Number(formData.get('end_km'));
       const distance_km = end_km - start_km;
 
-      await AppAPI.request('createDriveLog', {
-        vehicle_id: activeVeh.vehicle_id,
-        date: formData.get('date'),
-        driver_id: user.user_id || '1001',
-        driver_name: user.name,
-        depart_time: formData.get('depart_time'),
-        arrival_time: formData.get('arrival_time'),
-        destination: formData.get('destination'),
-        purpose: formData.get('purpose'),
-        start_km,
-        end_km,
-        distance_km,
-        request_id: formData.get('request_id') || ''
-      });
+      setFormSavingState(form, true, '운행일지 저장 중...');
+      try {
+        await AppAPI.request('createDriveLog', {
+          vehicle_id: activeVeh.vehicle_id,
+          date: formData.get('date'),
+          driver_id: user.user_id || '1001',
+          driver_name: user.name,
+          depart_time: formData.get('depart_time'),
+          arrival_time: formData.get('arrival_time'),
+          destination: formData.get('destination'),
+          purpose: formData.get('purpose'),
+          start_km,
+          end_km,
+          distance_km,
+          request_id: formData.get('request_id') || ''
+        });
 
-      await AppStore.loadInitialData();
-      closeModal();
-      const linkedMsg = formData.get('request_id') ? ` (신청 ${formData.get('request_id')} 연결)` : '';
-      showToast(`운행일지가 저장되었습니다. (주행거리: ${distance_km}km)${linkedMsg}`);
+        await AppStore.loadInitialData();
+        closeModal();
+        const linkedMsg = formData.get('request_id') ? ` (신청 ${formData.get('request_id')} 연결)` : '';
+        showToast(`📑 운행일지가 성공적으로 저장되었습니다. (주행거리: ${distance_km}km)${linkedMsg}`);
+      } finally {
+        setFormSavingState(form, false);
+      }
     });
   }
 
@@ -793,26 +835,31 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const formData = new FormData(form);
 
-        await AppAPI.request('createAccidentLog', {
-          vehicle_id: activeVeh.vehicle_id,
-          date: formData.get('date'),
-          driver_id: user.user_id || '1001',
-          driver_name: user.name,
-          location: formData.get('location'),
-          accident_role: formData.get('accident_role'),
-          damage_person_yn: formData.get('damage_person_yn') || 'N',
-          damage_person_detail: formData.get('damage_person_detail') || '',
-          damage_property_yn: formData.get('damage_property_yn') || 'N',
-          damage_property_detail: formData.get('damage_property_detail') || '',
-          counterpart_name: formData.get('counterpart_name') || '',
-          counterpart_phone: formData.get('counterpart_phone') || '',
-          counterpart_insurance: formData.get('counterpart_insurance') || '',
-          description: formData.get('description')
-        });
+        setFormSavingState(form, true, '사고 경위서 저장 중...');
+        try {
+          await AppAPI.request('createAccidentLog', {
+            vehicle_id: activeVeh.vehicle_id,
+            date: formData.get('date'),
+            driver_id: user.user_id || '1001',
+            driver_name: user.name,
+            location: formData.get('location'),
+            accident_role: formData.get('accident_role'),
+            damage_person_yn: formData.get('damage_person_yn') || 'N',
+            damage_person_detail: formData.get('damage_person_detail') || '',
+            damage_property_yn: formData.get('damage_property_yn') || 'N',
+            damage_property_detail: formData.get('damage_property_detail') || '',
+            counterpart_name: formData.get('counterpart_name') || '',
+            counterpart_phone: formData.get('counterpart_phone') || '',
+            counterpart_insurance: formData.get('counterpart_insurance') || '',
+            description: formData.get('description')
+          });
 
-        await AppStore.loadInitialData();
-        closeModal();
-        showToast('사고 경위서(v1.1)가 성공적으로 접수되었습니다.');
+          await AppStore.loadInitialData();
+          closeModal();
+          showToast('🚨 사고 경위서가 성공적으로 접수/저장되었습니다.');
+        } finally {
+          setFormSavingState(form, false);
+        }
       });
     }
   }
@@ -857,18 +904,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const liter = Number(formData.get('liter'));
       const unit_price = Math.round(amount / liter);
 
-      await AppAPI.request('createFuelLog', {
-        vehicle_id: activeVeh.vehicle_id,
-        date: formData.get('date'),
-        station: formData.get('station'),
-        amount_won: amount,
-        liter,
-        unit_price
-      });
+      setFormSavingState(form, true, '주유 기록 저장 중...');
+      try {
+        await AppAPI.request('createFuelLog', {
+          vehicle_id: activeVeh.vehicle_id,
+          date: formData.get('date'),
+          station: formData.get('station'),
+          amount_won: amount,
+          liter,
+          unit_price
+        });
 
-      await AppStore.loadInitialData();
-      closeModal();
-      showToast(`주유 기록이 저장되었습니다. (리터당 단가: ${unit_price.toLocaleString()}원)`);
+        await AppStore.loadInitialData();
+        closeModal();
+        showToast('⛽ 주유 기록이 성공적으로 저장되었습니다.');
+      } finally {
+        setFormSavingState(form, false);
+      }
     });
   }
 
