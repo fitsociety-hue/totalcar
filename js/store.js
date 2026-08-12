@@ -77,41 +77,39 @@ const AppStore = {
   },
 
   /**
-   * 로그인 처리
+   * 로그인 처리 (2차 GAS Fallback 포함)
    */
-  login(identity, password) {
-    // state.data.Users와 LocalStorage Users를 병합하여 검색 (회원가입 후 새로고침 없이도 로그인 가능)
-    let users = this.state.data.Users || [];
-    try {
-      const stored = localStorage.getItem(AppAPI.STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && Array.isArray(parsed.Users)) {
-          // LocalStorage의 Users를 병합 (중복 제거)
-          const stateIds = new Set(users.map(u => u.user_id));
-          const stateEmails = new Set(users.filter(u => u.email).map(u => u.email.toLowerCase()));
-          parsed.Users.forEach(u => {
-            if (!stateIds.has(u.user_id) && !(u.email && stateEmails.has(u.email.toLowerCase()))) {
-              users = [...users, u];
-            }
-          });
-          // state.data도 최신 LocalStorage 데이터로 동기화
-          this.state.data = { ...this.state.data, Users: users };
-        }
-      }
-    } catch (e) {
-      console.warn('LocalStorage Users sync error:', e);
-    }
+  async login(identity, password) {
+    const users = this.state.data.Users || [];
     const searchKey = identity.trim().toLowerCase();
     
-    // 이메일, user_id, 성명으로 조회
-    const user = users.find(u => 
+    // 1차: 로컬 데이터에서 검색 (이메일, user_id, 성명)
+    let user = users.find(u => 
       (u.email && u.email.toLowerCase() === searchKey) ||
       (u.user_id && u.user_id.toLowerCase() === searchKey) ||
       (u.name && u.name.toLowerCase() === searchKey)
     );
 
+    // 2차: 로컬에 없으면 GAS 백엔드에 직접 조회
     if (!user) {
+      try {
+        const gasResult = await AppAPI.request('loginUser', { identity: searchKey, password });
+        if (gasResult && gasResult.success && gasResult.user) {
+          // GAS에서 찾은 사용자를 로컬 DB에 추가 (다음 접속부터 로컬에서도 로그인 가능)
+          const updatedUsers = [...users, gasResult.user];
+          const updatedData = { ...this.state.data, Users: updatedUsers };
+          AppAPI.saveStorage(updatedData);
+          this.setState({ data: updatedData, currentUser: gasResult.user });
+          try {
+            localStorage.setItem(APP_CONFIG.SESSION_USER_KEY, JSON.stringify(gasResult.user));
+          } catch (e) {}
+          return { success: true, user: gasResult.user };
+        } else if (gasResult && !gasResult.success) {
+          return { success: false, message: gasResult.message || '존재하지 않는 사용자 계정 또는 이메일입니다.' };
+        }
+      } catch (e) {
+        console.warn('GAS loginUser fallback failed:', e);
+      }
       return { success: false, message: '존재하지 않는 사용자 계정 또는 이메일입니다.' };
     }
 
@@ -236,6 +234,107 @@ const AppStore = {
       };
     }
     return vehicles.find(v => v.vehicle_id === this.state.activeVehicleId) || vehicles[0];
+  },
+
+  /**
+   * 차량별 통합 요약 데이터 (유기적 연동 핵심)
+   */
+  getVehicleSummary(vehicleId) {
+    const data = this.state.data;
+    const vid = vehicleId || this.state.activeVehicleId;
+
+    const driveLogs = (data.DriveLogs || []).filter(l => l.vehicle_id === vid);
+    const driveRequests = (data.DriveRequests || []).filter(r => r.vehicle_id === vid);
+    const fuelLogs = (data.Fuel || []).filter(f => f.vehicle_id === vid);
+    const maintLogs = (data.Maintenance || []).filter(m => m.vehicle_id === vid);
+    const accidentLogs = (data.Accidents || []).filter(a => a.vehicle_id === vid);
+    const insurance = (data.Insurance || []).find(i => i.vehicle_id === vid) || null;
+    const vehicle = (data.Vehicles || []).find(v => v.vehicle_id === vid) || null;
+
+    // 월간 주행거리 합계
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const monthlyLogs = driveLogs.filter(l => (l.date || '').startsWith(thisMonth));
+    const monthlyKm = monthlyLogs.reduce((sum, l) => sum + (Number(l.distance_km) || 0), 0);
+
+    // 월간 비용 합계
+    const monthlyFuel = fuelLogs.filter(f => (f.date || '').startsWith(thisMonth));
+    const monthlyFuelCost = monthlyFuel.reduce((sum, f) => sum + (Number(f.amount_won) || 0), 0);
+    const monthlyMaint = maintLogs.filter(m => (m.in_date || '').startsWith(thisMonth));
+    const monthlyMaintCost = monthlyMaint.reduce((sum, m) => sum + (Number(m.cost_total) || 0), 0);
+
+    // 보험 만료 경고
+    let insuranceDDay = null;
+    const insEndDate = insurance ? (insurance.insurance_end || insurance.end_date) : (vehicle ? vehicle.insurance_end : null);
+    if (insEndDate) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const end = new Date(insEndDate); end.setHours(0,0,0,0);
+      insuranceDDay = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+    }
+
+    // 오늘 예약 건수
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayRequests = driveRequests.filter(r => r.drive_date === todayStr);
+
+    return {
+      vehicle,
+      insurance,
+      driveLogs,
+      driveRequests,
+      fuelLogs,
+      maintLogs,
+      accidentLogs,
+      monthlyKm,
+      monthlyFuelCost,
+      monthlyMaintCost,
+      monthlyTotalCost: monthlyFuelCost + monthlyMaintCost,
+      insuranceDDay,
+      todayRequestsCount: todayRequests.length,
+      totalDriveCount: driveLogs.length,
+      totalAccidentCount: accidentLogs.length,
+      latestFuel: fuelLogs[0] || null,
+      latestMaint: maintLogs[0] || null,
+      latestAccident: accidentLogs[0] || null,
+      nextMaintenanceDate: maintLogs.length > 0 ? maintLogs[0].next_due_date : null
+    };
+  },
+
+  /**
+   * 운행신청 → 운행일지 연결용: 미작성 신청건 가져오기
+   */
+  getLinkedRequests(vehicleId) {
+    const data = this.state.data;
+    const vid = vehicleId || this.state.activeVehicleId;
+    const requests = (data.DriveRequests || []).filter(r => r.vehicle_id === vid);
+    const logs = (data.DriveLogs || []).filter(l => l.vehicle_id === vid);
+    const loggedReqIds = new Set(logs.map(l => l.request_id).filter(Boolean));
+
+    return requests.filter(r =>
+      (r.approval_status === '확정(우선권)' || r.approval_status === '승인') &&
+      !loggedReqIds.has(r.request_id)
+    );
+  },
+
+  /**
+   * 보험 만료 임박 차량 경고 리스트 (30일 이내)
+   */
+  getInsuranceAlerts() {
+    const vehicles = this.state.data.Vehicles || [];
+    const insurances = this.state.data.Insurance || [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const alerts = [];
+
+    vehicles.forEach(v => {
+      const ins = insurances.find(i => i.vehicle_id === v.vehicle_id);
+      const endStr = ins ? (ins.insurance_end || ins.end_date) : v.insurance_end;
+      if (!endStr) return;
+      const end = new Date(endStr); end.setHours(0,0,0,0);
+      const dday = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+      if (dday <= 30) {
+        alerts.push({ vehicle_id: v.vehicle_id, model: v.model, dday, endDate: endStr, expired: dday <= 0 });
+      }
+    });
+
+    return alerts;
   },
 
   /**

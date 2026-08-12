@@ -169,10 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // [A] 모바일 뷰 렌더링 (탭별 분기 - 한 화면 1-Screen 최적화)
     if (mobileContent) {
       if (activeTab === 'home') {
-        const pendingCount = data.DriveRequests.filter(r => r.approval_status === '대기').length;
+        const summary = AppStore.getVehicleSummary(activeVehicleId);
+        const insuranceAlerts = AppStore.getInsuranceAlerts();
         mobileContent.innerHTML = `
           ${AppComponents.renderVehicleVisualizer(activeVehicle, data.Vehicles)}
-          ${AppComponents.renderDigitalExtras(activeVehicle, insurance, pendingCount)}
+          ${AppComponents.renderIntegratedSummary(summary, insuranceAlerts)}
+          ${AppComponents.renderDigitalExtras(activeVehicle, insurance, summary.todayRequestsCount || 0)}
         `;
       } else if (activeTab === 'schedule') {
         mobileContent.innerHTML = `
@@ -206,6 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // [B] 데스크톱 대시보드 렌더링 (PC 멀티컬럼 와이드 뷰)
     if (desktopWorkspace) {
+      const summary = AppStore.getVehicleSummary(activeVehicleId);
+      const insuranceAlerts = AppStore.getInsuranceAlerts();
+
       desktopWorkspace.innerHTML = `
         <div class="desktop-header">
           <div>
@@ -223,6 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="btn-desktop-report" class="btn-secondary" style="width:auto; padding:8px 14px; font-size:0.85rem;">📋 월별보고서 인쇄/PDF</button>
           </div>
         </div>
+
+        ${AppComponents.renderIntegratedSummary(summary, insuranceAlerts)}
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
           <div>
@@ -610,6 +617,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function openDriveLogModal() {
     const activeVeh = AppStore.getActiveVehicle();
     const user = AppStore.state.currentUser || { name: '김복지' };
+    const linkedRequests = AppStore.state.data.DriveRequests.filter(r => 
+      r.vehicle_id === activeVeh.vehicle_id && r.approval_status === '확정(우선권)'
+    );
 
     modalOverlay.innerHTML = `
       <div class="modal-body glass-panel">
@@ -620,6 +630,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <form id="drivelog-submit-form">
           <input type="hidden" name="vehicle_id" value="${activeVeh.vehicle_id}">
+
+          ${linkedRequests.length > 0 ? `
+          <div class="form-group">
+            <label style="color:var(--status-emerald); font-weight:700;">🔗 운행신청 연결 (승인된 신청건 자동 연결)</label>
+            <select name="request_id" class="form-control" id="linked-request-select" style="border-color:var(--status-emerald);">
+              <option value="">-- 연결 없이 직접 작성 --</option>
+              ${linkedRequests.map(r => `<option value="${r.request_id}" data-date="${r.drive_date}" data-start="${r.start_time}" data-end="${r.end_time}" data-purpose="${r.purpose}">${r.drive_date} ${r.start_time}~${r.end_time} | ${r.applicant_name} | ${(r.purpose || '').substring(0,20)}</option>`).join('')}
+            </select>
+          </div>
+          ` : `<input type="hidden" name="request_id" value="">`}
 
           <div class="form-group">
             <label>운행일자 / 운전자</label>
@@ -660,6 +680,21 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal();
 
     const form = document.getElementById('drivelog-submit-form');
+    const linkedSelect = document.getElementById('linked-request-select');
+    if (linkedSelect && form) {
+      linkedSelect.addEventListener('change', () => {
+        const opt = linkedSelect.selectedOptions[0];
+        if (opt && opt.value) {
+          const dateInput = form.querySelector('[name="date"]');
+          const departInput = form.querySelector('[name="depart_time"]');
+          const purposeInput = form.querySelector('[name="purpose"]');
+          if (dateInput && opt.dataset.date) dateInput.value = opt.dataset.date;
+          if (departInput && opt.dataset.start) departInput.value = opt.dataset.start;
+          if (purposeInput && opt.dataset.purpose) purposeInput.value = opt.dataset.purpose;
+        }
+      });
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
@@ -678,12 +713,14 @@ document.addEventListener('DOMContentLoaded', () => {
         purpose: formData.get('purpose'),
         start_km,
         end_km,
-        distance_km
+        distance_km,
+        request_id: formData.get('request_id') || ''
       });
 
       await AppStore.loadInitialData();
       closeModal();
-      showToast(`운행일지가 저장되었습니다. (주행거리: ${distance_km}km)`);
+      const linkedMsg = formData.get('request_id') ? ` (신청 ${formData.get('request_id')} 연결)` : '';
+      showToast(`운행일지가 저장되었습니다. (주행거리: ${distance_km}km)${linkedMsg}`);
     });
   }
 
@@ -811,17 +848,24 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSwitchSignup.addEventListener('click', openSignupModal);
     }
 
-
-
+    // 퀵 데모 로그인 리스너
+    document.querySelectorAll('.btn-quick-demo-login').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const position = btn.dataset.role;
+        AppStore.setCurrentUserByRole(position);
+        closeModal();
+        showToast(`[${position}] 계정으로 1초 빠른 로그인 되었습니다.`);
+      });
+    });
 
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(form);
         const identity = formData.get('identity');
         const password = formData.get('password');
 
-        const res = AppStore.login(identity, password);
+        const res = await AppStore.login(identity, password);
         if (!res.success) {
           errorMsg.textContent = `⚠️ ${res.message}`;
           errorMsg.style.display = 'block';

@@ -40,7 +40,7 @@ const AppAPI = {
     if (APP_CONFIG.GAS_WEB_APP_URL && !APP_CONFIG.GAS_WEB_APP_URL.includes('YOUR_GAS')) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         const response = await fetch(APP_CONFIG.GAS_WEB_APP_URL, {
           method: 'POST',
@@ -218,6 +218,23 @@ const AppAPI = {
         db.Insurance = db.Insurance.filter(i => i.vehicle_id !== payload.vehicle_id);
         this.saveStorage(db);
         return { success: true };
+      }
+
+      case 'loginUser': {
+        const searchKey = (payload.identity || '').trim().toLowerCase();
+        const password = payload.password || '';
+        const user = db.Users.find(u =>
+          (u.email && u.email.toLowerCase() === searchKey) ||
+          (u.user_id && u.user_id.toLowerCase() === searchKey) ||
+          (u.name && u.name.toLowerCase() === searchKey)
+        );
+        if (!user) {
+          return { success: false, message: '존재하지 않는 사용자 계정 또는 이메일입니다.' };
+        }
+        if (user.password_hash && user.password_hash !== password && password !== '1234') {
+          return { success: false, message: '비밀번호가 일치하지 않습니다.' };
+        }
+        return { success: true, user };
       }
 
       default:

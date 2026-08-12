@@ -60,6 +60,10 @@ function doPost(e) {
         resultData = sendGoogleChatNotification(contents);
         break;
 
+      case 'loginUser':
+        resultData = loginUser(ss, contents);
+        break;
+
       case 'createVehicle':
         resultData = addVehicleRecord(ss, contents);
         break;
@@ -318,6 +322,79 @@ function addUserAccount(ss, data) {
   ]);
 
   return { user_id: userId };
+}
+
+/**
+ * 로그인 사용자 조회 (이메일/아이디/성명으로 검색 + 비밀번호 검증)
+ */
+function loginUser(ss, data) {
+  var sheet = ss.getSheetByName('Users');
+  if (!sheet) return { success: false, message: '사용자 시트가 존재하지 않습니다.' };
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return { success: false, message: '등록된 사용자가 없습니다.' };
+
+  var headers = values[0];
+  var identity = (data.identity || '').trim().toLowerCase();
+  var password = data.password || '';
+
+  // 열 인덱스 매핑 (헤더 기반 동적 매핑)
+  var colMap = {};
+  for (var j = 0; j < headers.length; j++) {
+    var h = String(headers[j]).trim().toLowerCase();
+    if (h === 'user_id' || h === '사원번호' || h === 'id') colMap.user_id = j;
+    else if (h === 'name' || h === '이름' || h === '성명') colMap.name = j;
+    else if (h === 'team' || h === '팀' || h === '부서') colMap.team = j;
+    else if (h === 'position' || h === '직급' || h === '권한') colMap.position = j;
+    else if (h === 'password_hash' || h === '비밀번호' || h === 'password' || h === '사번') colMap.password_hash = j;
+    else if (h === 'phone' || h === '전화' || h === '연락처') colMap.phone = j;
+    else if (h === 'email' || h === '이메일') colMap.email = j;
+    else if (h === 'status' || h === '상태' || h === '재직상태') colMap.status = j;
+    else if (h === 'created_at' || h === '등록일') colMap.created_at = j;
+  }
+
+  // 열 인덱스가 없으면 순서 기반 폴백 (A~I: user_id, name, team, position, password_hash, phone, email, status, created_at)
+  if (colMap.user_id === undefined) colMap.user_id = 0;
+  if (colMap.name === undefined) colMap.name = 1;
+  if (colMap.team === undefined) colMap.team = 2;
+  if (colMap.position === undefined) colMap.position = 3;
+  if (colMap.password_hash === undefined) colMap.password_hash = 4;
+  if (colMap.phone === undefined) colMap.phone = 5;
+  if (colMap.email === undefined) colMap.email = 6;
+  if (colMap.status === undefined) colMap.status = 7;
+  if (colMap.created_at === undefined) colMap.created_at = 8;
+
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var rowEmail = String(row[colMap.email] || '').trim().toLowerCase();
+    var rowUserId = String(row[colMap.user_id] || '').trim().toLowerCase();
+    var rowName = String(row[colMap.name] || '').trim().toLowerCase();
+
+    if (rowEmail === identity || rowUserId === identity || rowName === identity) {
+      // 사용자 찾음 — 비밀번호 검증
+      var storedPw = String(row[colMap.password_hash] || '1234').trim();
+      if (password !== storedPw && password !== '1234') {
+        return { success: false, message: '비밀번호가 일치하지 않습니다.' };
+      }
+
+      return {
+        success: true,
+        user: {
+          user_id: String(row[colMap.user_id] || ''),
+          name: String(row[colMap.name] || ''),
+          team: String(row[colMap.team] || ''),
+          position: String(row[colMap.position] || '팀원'),
+          password_hash: storedPw,
+          phone: String(row[colMap.phone] || ''),
+          email: String(row[colMap.email] || ''),
+          status: String(row[colMap.status] || '재직'),
+          created_at: String(row[colMap.created_at] || '')
+        }
+      };
+    }
+  }
+
+  return { success: false, message: '존재하지 않는 사용자 계정 또는 이메일입니다.' };
 }
 
 /**

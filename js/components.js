@@ -89,6 +89,115 @@ const AppComponents = {
   },
 
   /**
+   * 1-B. 차량 번호 기준 유기적 통합 연동 요약 카드 (운행↔일지↔주유↔정비↔사고↔보험)
+   */
+  renderIntegratedSummary(summary, insuranceAlerts) {
+    if (!summary || !summary.vehicle) return '';
+
+    const {
+      vehicle,
+      insurance,
+      monthlyKm,
+      monthlyFuelCost,
+      monthlyMaintCost,
+      monthlyTotalCost,
+      insuranceDDay,
+      todayRequestsCount,
+      totalDriveCount,
+      totalAccidentCount,
+      latestFuel,
+      latestMaint,
+      latestAccident,
+      nextMaintenanceDate
+    } = summary;
+
+    // 보험 경고 렌더링
+    let alertBanner = '';
+    if (insuranceAlerts && insuranceAlerts.length > 0) {
+      alertBanner = `
+        <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); padding:10px 14px; border-radius:var(--radius-md); margin-bottom:12px; font-size:0.82rem; display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.1rem;">⚠️</span>
+            <div>
+              <strong style="color:#FCA5A5;">보험 만료 임박 경고!</strong>
+              <div style="color:var(--text-muted); font-size:0.75rem;">
+                ${insuranceAlerts.map(a => `[${a.vehicle_id}] ${a.expired ? '만료됨!' : `만료 D-${a.dday}일 (${a.endDate})`}`).join(', ')}
+              </div>
+            </div>
+          </div>
+          <span class="badge" style="background:rgba(239,68,68,0.25); color:#FF8A8A;">즉시갱신 필요</span>
+        </div>
+      `;
+    }
+
+    return `
+      ${alertBanner}
+      <div class="glass-panel" style="padding:16px; margin-bottom:12px; border:1px solid var(--border-glass-strong); background:linear-gradient(145deg, rgba(20,23,32,0.85) 0%, rgba(13,15,20,0.9) 100%);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <h3 style="font-size:0.95rem; font-weight:700; color:var(--accent-gold); display:flex; align-items:center; gap:6px;">
+            <span>🔗</span> [${vehicle.vehicle_id}] 유기적 통합 연동 현황
+          </h3>
+          <span style="font-size:0.75rem; color:var(--text-muted);">이번 달 유지비: <strong style="color:var(--accent-gold);">${monthlyTotalCost.toLocaleString()}원</strong></span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+          <!-- 1. 운행/일지 연동 -->
+          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text-muted);">📑 운행일지 연동</span>
+              <span class="badge" style="font-size:0.68rem; padding:1px 6px; background:rgba(16,185,129,0.15); color:#10B981;">누적 ${totalDriveCount}건</span>
+            </div>
+            <div style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin-top:4px;">
+              당월 ${monthlyKm.toLocaleString()} km <small style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(오늘 ${todayRequestsCount}건 예약)</small>
+            </div>
+          </div>
+
+          <!-- 2. 주유 연동 -->
+          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text-muted);">⛽ 주유 비용 연동</span>
+              <span style="font-size:0.7rem; color:var(--accent-gold);">${latestFuel ? latestFuel.date : '-'}</span>
+            </div>
+            <div style="font-size:0.95rem; font-weight:700; color:var(--accent-gold); margin-top:4px;">
+              ${monthlyFuelCost > 0 ? `${monthlyFuelCost.toLocaleString()}원` : '기록 없음'}
+              ${latestFuel ? `<div style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">최근: ${latestFuel.station}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- 3. 정비 연동 -->
+          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text-muted);">🛠️ 정비/점검 연동</span>
+              <span style="font-size:0.7rem; color:#3498db;">${nextMaintenanceDate ? `다음: ${nextMaintenanceDate}` : '정상'}</span>
+            </div>
+            <div style="font-size:0.95rem; font-weight:700; color:#3498db; margin-top:4px;">
+              ${monthlyMaintCost > 0 ? `${monthlyMaintCost.toLocaleString()}원` : '당월 입고없음'}
+              ${latestMaint ? `<div style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${latestMaint.reason}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- 4. 사고/보험 연동 -->
+          <div style="background:rgba(15,18,26,0.6); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text-muted);">🛡️ 사고/보험 연동</span>
+              <span class="badge" style="font-size:0.68rem; padding:1px 6px; background:${totalAccidentCount > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}; color:${totalAccidentCount > 0 ? '#EF4444' : '#10B981'};">
+                ${totalAccidentCount > 0 ? `사고 ${totalAccidentCount}건` : '무사고'}
+              </span>
+            </div>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); margin-top:4px;">
+              ${insurance ? `${insurance.company}` : '보험 미등록'}
+              <div style="font-size:0.7rem; color:var(--status-emerald); font-weight:normal;">
+                ${insuranceDDay !== null ? (insuranceDDay > 0 ? `만료 D-${insuranceDDay}일` : '만료됨!') : ''}
+                (${insurance ? (insurance.claim_phone || '1588-0100') : ''})
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
    * 2. 디지털 엑스트라 / 차량 상태 목록 (벤츠 Screenshot 3 벤치마킹)
    */
   renderDigitalExtras(vehicle, insurance, pendingRequestsCount) {
@@ -381,7 +490,17 @@ const AppComponents = {
           <button id="btn-switch-to-signup" class="btn-secondary" style="padding:8px; font-size:0.85rem;">⚡ 신규 회원가입 신청</button>
         </div>
 
-
+        <!-- 1초 빠른 데모 계정 선택 바 -->
+        <div style="margin-top:16px; background:rgba(229,169,60,0.08); border:1px solid var(--border-glass-strong); padding:12px; border-radius:var(--radius-sm);">
+          <div style="font-size:0.75rem; color:var(--accent-gold); font-weight:700; margin-bottom:6px;">🚀 테스트용 1초 빠른 로그인 선택</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <button class="btn-quick-demo-login btn-secondary" data-role="팀원" style="padding:4px 8px; font-size:0.72rem; width:auto;">김복지 (팀원)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="팀장" style="padding:4px 8px; font-size:0.72rem; width:auto;">이팀장 (팀장)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="차량관리담당자" style="padding:4px 8px; font-size:0.72rem; width:auto;">박차량 (담당자)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="사무국장" style="padding:4px 8px; font-size:0.72rem; width:auto;">최국장 (국장)</button>
+            <button class="btn-quick-demo-login btn-secondary" data-role="관장" style="padding:4px 8px; font-size:0.72rem; width:auto;">정관장 (관장)</button>
+          </div>
+        </div>
       </div>
     `;
   },

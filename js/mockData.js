@@ -6,7 +6,8 @@ const MOCK_DATA = {
   // 1. Users (사용자 계정)
   Users: [
     { user_id: '1001', name: '김복지', team: '복지사업팀', position: '팀원', password_hash: '1234', phone: '010-1234-5678', email: 'kim@gde.or.kr', status: '재직', created_at: '2026-01-10' },
-    { user_id: '1003', name: '박차량', team: '운영지원팀', position: '차량관리담당자', password_hash: '1234', phone: '010-3456-7890', email: 'park@gde.or.kr', status: '재직', created_at: '2026-01-10' }
+    { user_id: '1003', name: '박차량', team: '운영지원팀', position: '차량관리담당자', password_hash: '1234', phone: '010-3456-7890', email: 'park@gde.or.kr', status: '재직', created_at: '2026-01-10' },
+    { user_id: 'USER_178643569627O', name: '김용필', team: '전략기획팀', position: '차량관리담당자', password_hash: '2610', phone: '010-6828-0579', email: 'alias1004@gde.or.kr', status: '재직', created_at: '2026-08-11' }
   ],
 
   // 2. Vehicles (차량 등록 정보)
