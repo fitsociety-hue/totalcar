@@ -59,6 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnMobileLogin = document.getElementById('btn-mobile-login');
   if (btnMobileLogin) btnMobileLogin.addEventListener('click', openLoginModal);
 
+  const btnBell = document.getElementById('btn-mobile-bell');
+  if (btnBell) btnBell.addEventListener('click', () => showToast('🔔 새로운 알림이 없습니다.'));
+
+  const btnSettings = document.getElementById('btn-mobile-settings');
+  if (btnSettings) btnSettings.addEventListener('click', () => showToast('⚙️ 시스템 설정 메뉴는 준비 중입니다.'));
+
+  const btnDesktopHome = document.getElementById('btn-desktop-home');
+  if (btnDesktopHome) btnDesktopHome.addEventListener('click', () => {
+    AppStore.setState({ activeTab: 'home' });
+    showToast('🏠 홈 화면으로 이동했습니다.');
+  });
+
   // 뷰 모드 전환 버튼 핸들러 (모바일 전용 vs PC 대시보드)
   if (btnViewMobile) {
     btnViewMobile.addEventListener('click', () => {
@@ -185,12 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const summary = AppStore.getVehicleSummary(activeVehicleId);
         const insuranceAlerts = AppStore.getInsuranceAlerts();
         mobileContent.innerHTML = `
-          ${AppComponents.renderQuickChipsBar()}
-          ${AppComponents.renderVehicleHeroCard(activeVehicle)}
           ${AppComponents.renderServiceQuickGrid()}
           ${AppComponents.renderVehicleVisualizer(activeVehicle, data.Vehicles)}
-          ${AppComponents.renderIntegratedSummary(summary, insuranceAlerts)}
-          ${AppComponents.renderDigitalExtras(activeVehicle, insurance, summary.todayRequestsCount || 0)}
         `;
       } else if (activeTab === 'schedule') {
         mobileContent.innerHTML = `
@@ -501,11 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qAcc = document.getElementById('quick-service-accident');
     if (qAcc) qAcc.addEventListener('click', openAccidentModal);
 
-    // 3. 메인 히어로 카드 버튼
-    const btnHeroInfo = document.getElementById('btn-hero-veh-info');
-    if (btnHeroInfo) btnHeroInfo.addEventListener('click', () => openVehicleModal(AppStore.getActiveVehicle()));
-    const btnHeroMil = document.getElementById('btn-hero-mileage-click');
-    if (btnHeroMil) btnHeroMil.addEventListener('click', () => openVehicleModal(AppStore.getActiveVehicle()));
+    // 3. (제거된 영웅 카드 버튼 리스너 영역)
 
     // 차량, 하이패스, 보험 등록 및 관리 버튼 핸들러
     const btnAddVeh = document.getElementById('btn-open-add-vehicle-modal');
@@ -679,9 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
           model: document.getElementById('veh-model').value.trim(),
           register_date: document.getElementById('veh-regdate').value,
           current_mileage: Number(document.getElementById('veh-mileage').value) || 0,
-          status: document.getElementById('veh-status').value,
-          hipass_id: document.getElementById('veh-hipass-id').value.trim(),
-          hipass_card: document.getElementById('veh-hipass-card').value.trim()
+          status: document.getElementById('veh-status').value
         };
 
         const insData = {
@@ -921,8 +923,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 승인/확정된 차량 운행 신청서 목록 필터링
     const linkedRequests = allRequests.filter(r => 
       String(r.vehicle_id).trim() === String(activeVeh.vehicle_id).trim() && 
-      (!r.approval_status || r.approval_status !== '반려')
+      (!r.approval_status || r.approval_status !== '반려') &&
+      r.applicant_name === user.name
     );
+
+    if (!linkedRequest && !logToEdit) {
+      const today = new Date().toISOString().split('T')[0];
+      linkedRequest = linkedRequests.find(r => r.drive_date === today);
+    }
 
     // 해당 차량의 직전 운행일지 종전 기록(최종 end_km) 조회
     const vehicleLogs = (AppStore.state.data.DriveLogs || [])
@@ -958,6 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : (linkedRequest ? linkedRequest.purpose : '');
 
     const defaultEndKm = logToEdit ? logToEdit.end_km : (lastEndKm > 0 ? lastEndKm + 25 : 25);
+    const defaultHipassBalance = logToEdit ? (logToEdit.hipass_balance || 0) : 35000;
     const selectedReqId = linkedRequest ? linkedRequest.request_id : (logToEdit ? logToEdit.request_id || '' : '');
 
     modalOverlay.innerHTML = `
@@ -1040,6 +1049,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="number" id="end_km" name="end_km" class="form-control" value="${defaultEndKm}" required placeholder="복귀 후 누적 km" style="border-color:var(--accent-gold);">
               </div>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label style="color:#3498db; font-weight:700;">💳 하이패스 카드 잔액 (원)</label>
+            <input type="number" name="hipass_balance" class="form-control" value="${defaultHipassBalance}" placeholder="예: 35000 (운행 완료 후 잔액)" style="border-color:#3498db; background:rgba(52,152,219,0.08);">
           </div>
 
           <button type="submit" class="btn-primary" style="margin-top:8px; padding:14px; font-size:1rem;">${logToEdit ? '✏️ 운행일지 수정 저장' : '📑 차량 운행일지 저장'}</button>

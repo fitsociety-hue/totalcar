@@ -17,7 +17,7 @@
   <!-- 권한 테스트 스위처 상단 바 (사용자 권한 테스트용 & 로그인 관리) -->
   <div id="role-test-bar">
     <div style="display:flex; align-items:center; gap:8px;">
-      <span style="color:var(--accent-gold); font-weight:700;">강동어울림복지관</span>
+      <span id="btn-desktop-home" style="color:var(--accent-gold); font-weight:700; cursor:pointer;" title="홈 화면으로 이동">강동어울림복지관</span>
       <span style="color:var(--text-dim);" class="nobr">| 스마트 차량통합관리 v1.1</span>
       <span id="header-user-badge" style="color:var(--text-main); font-weight:600; margin-left:10px;" class="nobr">👤 접속: <strong id="header-user-name" style="color:var(--accent-gold);">손님</strong> (<span id="header-user-role">비로그인</span>)</span>
     </div>
@@ -67,8 +67,8 @@
           </div>
           <div class="header-actions">
             <button id="btn-mobile-login" class="header-btn" title="로그인/계정">👤</button>
-            <button class="header-btn" title="알림함">🔔</button>
-            <button class="header-btn" title="설정">⚙️</button>
+            <button id="btn-mobile-bell" class="header-btn" title="알림함">🔔</button>
+            <button id="btn-mobile-settings" class="header-btn" title="설정">⚙️</button>
           </div>
         </div>
 

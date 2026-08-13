@@ -560,18 +560,21 @@ const AppStore = {
       vehicles[vIdx] = { ...vehicles[vIdx], ...vehicleData };
     }
 
+    let currentIns = null;
     const iIdx = insurances.findIndex(i => i.vehicle_id === vehicleId);
     if (iIdx !== -1) {
       insurances[iIdx] = { ...insurances[iIdx], ...insuranceData };
+      currentIns = insurances[iIdx];
     } else if (insuranceData) {
-      insurances.push({ vehicle_id: vehicleId, ...insuranceData });
+      currentIns = { vehicle_id: vehicleId, ...insuranceData };
+      insurances.push(currentIns);
     }
 
     const updatedData = { ...this.state.data, Vehicles: vehicles, Insurance: insurances };
     AppAPI.saveStorage(updatedData);
 
     this.setState({ data: updatedData });
-    await AppAPI.request('updateVehicle', { vehicle: vehicles[vIdx], insurance: insurances[iIdx] });
+    await AppAPI.request('updateVehicle', { vehicle: vehicles[vIdx], insurance: currentIns });
     return { success: true };
   },
 

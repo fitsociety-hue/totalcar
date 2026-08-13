@@ -88,9 +88,8 @@ const AppComponents = {
       <div class="vehicle-card glass-panel">
         <div class="vehicle-selector-header">
           <div>
-            <div class="vehicle-name-title gold-gradient-text">${vehicle.model}</div>
-            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
-              <select id="vehicle-select-dropdown" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-glass); color:var(--accent-gold); padding:2px 6px; border-radius:4px; font-weight:700; cursor:pointer;">
+            <div style="font-size:0.8rem; color:var(--text-muted);">
+              <select id="vehicle-select-dropdown" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-glass); color:var(--accent-gold); padding:4px 8px; border-radius:4px; font-weight:700; cursor:pointer;">
                 ${vehicleOptionsHTML}
               </select>
             </div>
@@ -110,10 +109,6 @@ const AppComponents = {
           <div class="stat-pill">
             <div class="label">누적 주행거리</div>
             <div class="value">${Number(vehicle.current_mileage).toLocaleString()} km</div>
-          </div>
-          <div class="stat-pill">
-            <div class="label">하이패스 단말기</div>
-            <div class="value" style="font-size:0.75rem; color:#3498db; font-weight:700;">${vehicle.hipass_id || '미등록'}</div>
           </div>
           <div class="stat-pill">
             <div class="label">보험 만료일${ddayText}</div>
@@ -250,7 +245,9 @@ const AppComponents = {
         </div>
       `;
     }
-    const insurancePhone = insurance ? insurance.claim_phone || insurance.company_phone : '1588-0100';
+    const rawPhone = (insurance && (insurance.claim_phone || insurance.company_phone)) ? String(insurance.claim_phone || insurance.company_phone) : '1544-0114';
+    const insurancePhone = rawPhone;
+    const cleanPhoneDigits = rawPhone.replace(/[^0-9]/g, '');
 
     return `
       <div class="digital-extras-container">
@@ -276,9 +273,9 @@ const AppComponents = {
         <div class="extra-card" id="btn-insurance-call">
           <div class="extra-info">
             <h4>24시간 긴급출동 & 사고접수</h4>
-            <p>${insurance ? insurance.company : 'DB손해보험'} (${insurancePhone})</p>
+            <p>${insurance ? insurance.company : 'KB손해보험'} (${insurancePhone})</p>
           </div>
-          <a href="tel:${insurancePhone.replace(/[^0-9]/g, '')}" class="extra-icon-box" style="text-decoration:none;">📞</a>
+          <a href="tel:${cleanPhoneDigits}" class="extra-icon-box" style="text-decoration:none;">📞</a>
         </div>
 
         <div class="extra-card">
@@ -738,7 +735,7 @@ const AppComponents = {
       <div class="modal-body glass-panel" style="max-width:560px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:10px;">
           <h3 style="font-size:1.15rem; color:var(--accent-gold); display:flex; align-items:center; gap:8px;">
-            ${isEdit ? '<span>✏️</span> 차량 & 하이패스/보험 정보 수정' : '<span>🚗</span> 차량 & 하이패스/보험 신규 등록'}
+            ${isEdit ? '<span>✏️</span> 차량 & 전용 보험 정보 수정' : '<span>🚗</span> 차량 & 전용 보험 신규 등록'}
           </h3>
           <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.2rem;">✕</button>
         </div>
@@ -776,22 +773,8 @@ const AppComponents = {
             </div>
           </div>
 
-          <div style="background:rgba(52,152,219,0.08); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass); margin-bottom:12px;">
-            <h4 style="font-size:0.85rem; color:#3498db; margin-bottom:8px;">💳 2. 하이패스 단말기 및 카드 연동</h4>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>하이패스 단말기 ID *</label>
-                <input type="text" id="veh-hipass-id" value="${v.hipass_id || ''}" placeholder="예: HP-770011" required>
-              </div>
-              <div class="form-group">
-                <label>하이패스 카드 번호</label>
-                <input type="text" id="veh-hipass-card" value="${v.hipass_card || ''}" placeholder="예: 9410-****-7700">
-              </div>
-            </div>
-          </div>
-
           <div style="background:rgba(46,204,113,0.08); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-glass); margin-bottom:14px;">
-            <h4 style="font-size:0.85rem; color:#2ecc71; margin-bottom:8px;">🛡️ 3. 차량 전용 보험 연동 정보</h4>
+            <h4 style="font-size:0.85rem; color:#2ecc71; margin-bottom:8px;">🛡️ 2. 차량 전용 보험 연동 정보</h4>
             <div class="form-grid">
               <div class="form-group">
                 <label>보험회사명 *</label>
@@ -865,7 +848,6 @@ const AppComponents = {
               <tr>
                 <th>차량번호 / 모델</th>
                 <th>주행거리</th>
-                <th>하이패스 ID</th>
                 <th>연동 보험사 / 긴급전화</th>
                 <th>보험 만료일 (D-Day)</th>
                 <th>상태</th>
@@ -883,7 +865,6 @@ const AppComponents = {
                       <div style="font-size:0.75rem; color:var(--text-muted);" class="nobr">${v.model}</div>
                     </td>
                     <td><strong class="nobr">${Number(v.current_mileage).toLocaleString()} km</strong></td>
-                    <td><span class="nobr" style="color:#3498db; font-weight:700;">${v.hipass_id || '미등록'}</span></td>
                     <td>
                       <div class="nobr" style="font-weight:600;">${ins.company || '미등록'}</div>
                       <div class="nobr" style="font-size:0.75rem; color:var(--accent-gold);">📞 ${ins.claim_phone || '미등록'}</div>
@@ -905,7 +886,7 @@ const AppComponents = {
                 `;
               }).join('') : `
                 <tr>
-                  <td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">
+                  <td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">
                     🚗 등록된 차량이 없습니다. ${isVehicleManager ? '상단의 [+ 차량 등록] 버튼을 클릭하여 첫 차량을 등록하세요.' : ''}
                   </td>
                 </tr>
@@ -1000,45 +981,6 @@ const AppComponents = {
         <button class="chip-btn" id="chip-btn-stats">
           <span>📊</span> 월별 통계
         </button>
-      </div>
-    `;
-  },
-
-  /**
-   * 첨부 이미지 벤치마킹: 3D 차량 메인 히어로 카드 (XM3 마이르노/카닥 벤치마킹)
-   */
-  renderVehicleHeroCard(vehicle) {
-    const vehId = vehicle ? vehicle.vehicle_id : '365라 1271';
-    const model = vehicle ? vehicle.model : '카니발 9인승';
-    const mileage = vehicle ? (Number(vehicle.current_mileage) || 77622).toLocaleString() : '77,622';
-
-    return `
-      <div class="hero-vehicle-card">
-        <div class="hero-vehicle-header">
-          <div>
-            <div class="hero-vehicle-title">${vehId}</div>
-            <div class="hero-vehicle-sub">${model} · 스마트 24시간 실시간 통합 관리 중</div>
-          </div>
-          <div class="hero-vehicle-badge-brand" title="${APP_CONFIG.ORGANIZATION_NAME}">
-            ❖
-          </div>
-        </div>
-
-        <div class="hero-vehicle-content">
-          <button class="hero-vehicle-btn-info" id="btn-hero-veh-info">
-            내 차 정보
-          </button>
-          <div style="text-align:right;">
-            <span style="font-size:1.8rem; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));">🚘</span>
-          </div>
-        </div>
-
-        <div class="hero-vehicle-footer" id="btn-hero-mileage-click" style="cursor:pointer;">
-          <span style="color:var(--text-muted);">현재 누적주행거리</span>
-          <strong style="color:var(--accent-gold); font-size:1.1rem; display:flex; align-items:center; gap:4px;">
-            ${mileage} km <span style="font-size:0.9rem; color:var(--text-muted);">›</span>
-          </strong>
-        </div>
       </div>
     `;
   },
