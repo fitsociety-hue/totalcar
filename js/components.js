@@ -63,57 +63,60 @@ const AppComponents = {
       `;
     }
 
-    const statusInfo = APP_CONFIG.VEHICLE_STATUS[
-      Object.keys(APP_CONFIG.VEHICLE_STATUS).find(k => APP_CONFIG.VEHICLE_STATUS[k].code === vehicle.status) || 'AVAILABLE'
-    ];
+    const vehicleListHTML = allVehicles.map(v => {
+      const statusInfo = APP_CONFIG.VEHICLE_STATUS[
+        Object.keys(APP_CONFIG.VEHICLE_STATUS).find(k => APP_CONFIG.VEHICLE_STATUS[k].code === v.status) || 'AVAILABLE'
+      ];
+      const isSelected = v.vehicle_id === (vehicle ? vehicle.vehicle_id : null);
+      
+      let ddayText = '';
+      if (v.insurance_end) {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const end = new Date(v.insurance_end);
+        end.setHours(0,0,0,0);
+        const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+        if (diff > 0) ddayText = `D-${diff}`;
+        else if (diff === 0) ddayText = 'D-Day';
+        else ddayText = `만료 D+${Math.abs(diff)}`;
+      }
 
-    const vehicleOptionsHTML = allVehicles.map(v => 
-      `<option value="${v.vehicle_id}" ${v.vehicle_id === vehicle.vehicle_id ? 'selected' : ''}>🚘 ${v.vehicle_id} (${v.model})</option>`
-    ).join('') + (isVehicleManager ? `<option value="__ADD_NEW__">➕ 차량 등록</option>` : '');
-
-    // D-Day 계산
-    let ddayText = '';
-    if (vehicle.insurance_end) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const end = new Date(vehicle.insurance_end);
-      end.setHours(0,0,0,0);
-      const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
-      if (diff > 0) ddayText = ` (D-${diff})`;
-      else if (diff === 0) ddayText = ' (D-Day)';
-      else ddayText = ` (만료 D+${Math.abs(diff)})`;
-    }
-
-    return `
-      <div class="vehicle-card glass-panel">
-        <div class="vehicle-selector-header">
+      return `
+        <div class="vehicle-list-item ${isSelected ? 'selected' : ''}" data-id="${v.vehicle_id}" style="
+          padding: 16px; 
+          border-radius: var(--radius-md); 
+          background: ${isSelected ? 'rgba(212,175,55,0.1)' : 'rgba(15,18,26,0.6)'}; 
+          border: 1px solid ${isSelected ? 'var(--accent-gold)' : 'var(--border-glass)'};
+          margin-bottom: 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        ">
           <div>
-            <div style="font-size:0.8rem; color:var(--text-muted);">
-              <select id="vehicle-select-dropdown" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-glass); color:var(--accent-gold); padding:4px 8px; border-radius:4px; font-weight:700; cursor:pointer;">
-                ${vehicleOptionsHTML}
-              </select>
+            <div style="font-size: 1.1rem; font-weight: 700; color: ${isSelected ? 'var(--accent-gold)' : 'var(--text-main)'}; margin-bottom: 6px;">
+              ${v.vehicle_id} <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">(${v.model})</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+              주행 <strong style="color:var(--text-main);">${Number(v.current_mileage).toLocaleString()}</strong> km <span style="margin:0 4px;">|</span> 보험 <strong style="color:var(--status-emerald);">${ddayText}</strong>
             </div>
           </div>
-          <span class="badge" style="background:${statusInfo.badgeBg}; color:${statusInfo.color}; border: 1px solid ${statusInfo.color}40;">
+          <span class="badge" style="background:${statusInfo.badgeBg}; color:${statusInfo.color}; border: 1px solid ${statusInfo.color}40; padding: 6px 10px; font-size: 0.85rem; font-weight:700;">
             ● ${statusInfo.label}
           </span>
         </div>
+      `;
+    }).join('');
 
-        <!-- Interactive 2D Overhead Car Visualizer -->
-        <div class="topview-container">
-          <img src="assets/car-topview.svg" alt="Vehicle Overhead View" style="height:100%; max-width:100%; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6));">
+    return `
+      <div class="glass-panel" style="padding: 16px; margin-top: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">🚗 전체 차량 상태 현황</h3>
+          ${isVehicleManager ? `<button id="btn-list-add-vehicle" style="background:transparent; border:none; color:var(--accent-gold); font-size:0.85rem; font-weight:700; cursor:pointer;">+ 신규 등록</button>` : ''}
         </div>
-
-        <!-- Quick Telemetry Pills -->
-        <div class="quick-stats-row">
-          <div class="stat-pill">
-            <div class="label">누적 주행거리</div>
-            <div class="value">${Number(vehicle.current_mileage).toLocaleString()} km</div>
-          </div>
-          <div class="stat-pill">
-            <div class="label">보험 만료일${ddayText}</div>
-            <div class="value" style="font-size:0.75rem; color:var(--status-emerald);">${vehicle.insurance_end || '-'}</div>
-          </div>
+        <div id="vehicle-list-container">
+          ${vehicleListHTML}
         </div>
       </div>
     `;

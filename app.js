@@ -212,18 +212,18 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileContent.innerHTML = renderAdminAndReportTab(data, currentUser);
       }
 
-      // 차량 선택 드롭다운 리스너 바인딩
-      const vSelect = document.getElementById('vehicle-select-dropdown');
-      if (vSelect) {
-        vSelect.addEventListener('change', (e) => {
-          const val = e.target.value;
-          if (val === '__ADD_NEW__') {
-            openVehicleModal();
-          } else {
-            AppStore.setState({ activeVehicleId: val });
-            showToast(`🚘 선택 차량이 [${val}] (으)로 유기적 연동되었습니다.`);
-          }
+      // 차량 선택 리스트 리스너 바인딩
+      document.querySelectorAll('.vehicle-list-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+          const val = e.currentTarget.dataset.id;
+          AppStore.setState({ activeVehicleId: val });
+          showToast(`🚘 기준 차량이 [${val}] (으)로 선택되었습니다.`);
         });
+      });
+
+      const btnListAdd = document.getElementById('btn-list-add-vehicle');
+      if (btnListAdd) {
+        btnListAdd.addEventListener('click', () => openVehicleModal());
       }
 
       // 모바일 뷰 내 버튼 리스너 바인딩
