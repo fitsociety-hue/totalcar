@@ -585,6 +585,24 @@ a {
   outline: none;
 }
 
+/* select option 드롭다운 가독성 개선 (다크 테마 호환) */
+.modal-body form select option {
+  background: #1a1d28;
+  color: #F1F5F9;
+  padding: 8px 12px;
+}
+
+.modal-body form select option:checked,
+.modal-body form select option:hover {
+  background: #2a2f3e;
+  color: var(--accent-gold, #E5A93C);
+}
+
+#role-test-bar select option {
+  background: #181B22;
+  color: #F1F5F9;
+}
+
 .form-group {
   margin-bottom: 20px;
 }

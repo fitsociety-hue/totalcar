@@ -949,6 +949,53 @@ const AppComponents = {
         </div>
       </div>
     `;
+  },
+
+  /**
+   * 비회원 접근 제한 - 로그인 유도 안내 화면
+   */
+  renderLoginRequiredScreen(tabName) {
+    const tabLabels = {
+      'schedule': '예약/신청',
+      'drivelog': '운행일지',
+      'maint': '차계부/정비',
+      'admin': '결재/관리'
+    };
+    const tabIcons = {
+      'schedule': '📅',
+      'drivelog': '📑',
+      'maint': '🔧',
+      'admin': '👤'
+    };
+    const label = tabLabels[tabName] || '기능';
+    const icon = tabIcons[tabName] || '🔒';
+
+    return `
+      <div class="glass-panel" style="padding:32px 20px; text-align:center; margin-top:20px;">
+        <div style="font-size:3.5rem; margin-bottom:16px; filter:drop-shadow(0 4px 12px rgba(229, 169, 60, 0.3));">🔒</div>
+        <h3 style="font-size:1.15rem; font-weight:700; color:var(--accent-gold); margin-bottom:10px;">
+          ${icon} ${label} 서비스는 로그인이 필요합니다
+        </h3>
+        <p style="font-size:0.88rem; color:var(--text-muted); line-height:1.6; margin-bottom:20px;">
+          강동어울림복지관 차량통합관리 시스템의<br>
+          <strong style="color:var(--text-main);">${label}</strong> 기능을 사용하시려면<br>
+          직원 계정으로 로그인해 주세요.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px; max-width:260px; margin:0 auto;">
+          <button id="btn-login-required-login" class="btn-primary" style="padding:12px; font-size:0.95rem;">
+            🔑 로그인
+          </button>
+          <button id="btn-login-required-signup" class="btn-secondary" style="padding:10px; font-size:0.88rem;">
+            📝 회원가입
+          </button>
+        </div>
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-glass);">
+          <p style="font-size:0.78rem; color:var(--text-dim); line-height:1.5;">
+            💡 비회원도 <strong style="color:var(--text-muted);">홈 화면</strong>에서 차량 정보 및 기본 안내 사항을 확인할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    `;
   }
 };
 

@@ -41,6 +41,24 @@ const AppStore = {
    * DB 데이터 로드 및 초기 세팅
    */
   async loadInitialData() {
+    // 세션 복원 우선 처리 (API 호출 전에 즉시 세션 반영)
+    let restoredUser = null;
+    try {
+      const savedSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
+      if (savedSession) {
+        const parsed = JSON.parse(savedSession);
+        if (parsed && (parsed.user_id || parsed.email)) {
+          restoredUser = parsed;
+          // 즉시 currentUser 반영 (새로고침 시 로그인 상태 유지)
+          if (!this.state.currentUser) {
+            this.setState({ currentUser: restoredUser });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Session pre-restore error:', e);
+    }
+
     this.setState({ loading: true });
     try {
       const fetched = await AppAPI.request('getInitialData');
@@ -54,19 +72,16 @@ const AppStore = {
 
       const users = validData.Users || MOCK_DATA.Users;
       
-      // LocalStorage 저장된 세션 유저 복원
-      let restoredUser = null;
-      try {
-        const savedSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
-        if (savedSession) {
-          const parsed = JSON.parse(savedSession);
-          restoredUser = users.find(u => u.user_id === parsed.user_id || u.email === parsed.email) || parsed;
+      // DB 유저 목록에서 세션 유저와 매칭하여 최신 정보로 교체
+      if (restoredUser) {
+        const matchedUser = users.find(u => u.user_id === restoredUser.user_id || u.email === restoredUser.email);
+        if (matchedUser) {
+          restoredUser = matchedUser;
         }
-      } catch (e) {
-        console.warn('Session parse error:', e);
+        // DB에 없어도 localStorage 세션 유저 유지 (세션 무효화 방지)
       }
 
-      const defaultUser = restoredUser || null;
+      const defaultUser = restoredUser || this.state.currentUser || null;
       const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '365라 1271';
       
       this.setState({
@@ -77,7 +92,8 @@ const AppStore = {
       });
     } catch (e) {
       console.error('Initial data load error:', e);
-      this.setState({ loading: false });
+      // API 실패 시에도 세션 유저 유지
+      this.setState({ loading: false, currentUser: restoredUser || this.state.currentUser || null });
     }
   },
 

@@ -99,10 +99,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3.2 모바일 하단 탭바 전환
+  // 3.2 모바일 하단 탭바 전환 (로그인 가드 적용)
+  const protectedTabs = ['schedule', 'drivelog', 'maint', 'admin'];
   tabItems.forEach(tab => {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.tab;
+      // 보호된 탭은 로그인 필수
+      if (protectedTabs.includes(tabName) && !AppStore.state.currentUser) {
+        showToast('🔒 로그인이 필요한 서비스입니다. 먼저 로그인해 주세요.', 'error');
+        openLoginModal();
+        return;
+      }
       tabItems.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       AppStore.setState({ activeTab: tabName });
@@ -193,12 +200,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // [A] 모바일 뷰 렌더링 (탭별 분기 - 한 화면 1-Screen 최적화)
     if (mobileContent) {
-      if (activeTab === 'home') {
+      // 비회원이 보호된 탭에 접근 시 로그인 유도 화면 표시
+      const isProtectedTab = ['schedule', 'drivelog', 'maint', 'admin'].includes(activeTab);
+      if (!currentUser && isProtectedTab) {
+        mobileContent.innerHTML = AppComponents.renderLoginRequiredScreen(activeTab);
+      } else if (activeTab === 'home') {
         const summary = AppStore.getVehicleSummary(activeVehicleId);
         const insuranceAlerts = AppStore.getInsuranceAlerts();
         mobileContent.innerHTML = `
           ${AppComponents.renderServiceQuickGrid()}
           ${AppComponents.renderVehicleVisualizer(activeVehicle, data.Vehicles)}
+          ${!currentUser ? `
+            <div class="glass-panel" style="padding:16px; margin-top:12px; text-align:center; border-color:rgba(229,169,60,0.3);">
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">
+                🔑 <strong style="color:var(--accent-gold);">로그인</strong>하시면 운행 신청, 일지 작성, 정비/사고 관리 등 모든 기능을 사용할 수 있습니다.
+              </p>
+              <button id="btn-home-login-prompt" class="btn-primary" style="width:auto; padding:8px 20px; font-size:0.88rem;">
+                🔑 로그인하기
+              </button>
+            </div>
+          ` : ''}
         `;
       } else if (activeTab === 'schedule') {
         mobileContent.innerHTML = `
@@ -211,6 +232,14 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (activeTab === 'admin') {
         mobileContent.innerHTML = renderAdminAndReportTab(data, currentUser);
       }
+
+      // 비회원 로그인 유도 화면 버튼 바인딩
+      const btnLoginRequired = document.getElementById('btn-login-required-login');
+      if (btnLoginRequired) btnLoginRequired.addEventListener('click', () => openLoginModal());
+      const btnSignupRequired = document.getElementById('btn-login-required-signup');
+      if (btnSignupRequired) btnSignupRequired.addEventListener('click', () => openSignupModal());
+      const btnHomeLoginPrompt = document.getElementById('btn-home-login-prompt');
+      if (btnHomeLoginPrompt) btnHomeLoginPrompt.addEventListener('click', () => openLoginModal());
 
       // 차량 선택 리스트 리스너 바인딩
       document.querySelectorAll('.vehicle-list-item').forEach(el => {
@@ -984,7 +1013,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!linkedRequest && !logToEdit) {
       const today = new Date().toISOString().split('T')[0];
-      linkedRequest = linkedRequests.find(r => r.drive_date === today);
+      // 오늘 날짜 신청서 우선 매칭, 없으면 가장 최근 과거 신청서 자동 선택
+      linkedRequest = linkedRequests.find(r => r.drive_date === today)
+        || linkedRequests
+          .filter(r => r.drive_date <= today)
+          .sort((a, b) => b.drive_date.localeCompare(a.drive_date))[0]
+        || null;
     }
 
     // 해당 차량의 직전 운행일지 종전 기록(최종 end_km) 조회
@@ -996,9 +1030,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ? Number(logToEdit.start_km) || 0
       : (vehicleLogs.length > 0 && Number(vehicleLogs[0].end_km) > 0 ? Number(vehicleLogs[0].end_km) : (activeVeh.current_mileage || 0));
 
+    const todayDate = new Date().toISOString().split('T')[0];
     const defaultDate = logToEdit 
       ? (logToEdit.date || '')
-      : (linkedRequest ? (linkedRequest.drive_date || '').replace(/T.*/, '') : new Date().toISOString().split('T')[0]);
+      : (linkedRequest ? (linkedRequest.drive_date || '').replace(/T.*/, '') : todayDate);
 
     const defaultDriver = logToEdit 
       ? (logToEdit.driver_name || '')
@@ -1058,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="form-group">
             <label>운행일자 / 운전자 *</label>
             <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:12px;">
-              <input type="date" name="date" class="form-control" value="${defaultDate}" required>
+              <input type="date" name="date" class="form-control" value="${defaultDate}" max="${todayDate}" required>
               <input type="text" name="driver_name" id="drivelog-driver-name" class="form-control" value="${defaultDriver}" required placeholder="운전자 성명">
             </div>
           </div>
