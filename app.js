@@ -584,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const editBtn = e.target.closest('.btn-edit-request');
       if (editBtn) {
         const reqId = editBtn.dataset.id;
-        const reqToEdit = (AppStore.state.data.DriveRequests || []).find(r => r.request_id === reqId);
+        const reqToEdit = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (reqToEdit) {
           openRequestModal(reqToEdit);
         }
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const deleteBtn = e.target.closest('.btn-delete-request');
       if (deleteBtn) {
         const reqId = deleteBtn.dataset.id;
-        const reqToDelete = (AppStore.state.data.DriveRequests || []).find(r => r.request_id === reqId);
+        const reqToDelete = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (reqToDelete) {
           if (confirm(`🗑️ [${reqToDelete.vehicle_id}] (${reqToDelete.drive_date} ${reqToDelete.start_time}~${reqToDelete.end_time}) 차량 운행 신청을 삭제(취소)하시겠습니까?`)) {
             await AppStore.deleteDriveRequest(reqId);
@@ -604,11 +604,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // 운행 신청 기반 일지 작성 이벤트 위임 핸들러
+      const createLogFromReqBtn = e.target.closest('.btn-create-drivelog-from-req');
+      if (createLogFromReqBtn) {
+        const reqId = createLogFromReqBtn.dataset.id;
+        const req = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
+        if (req) {
+          openDriveLogModal(null, req);
+        }
+        return;
+      }
+
       // 운행일지 수정 / 삭제 이벤트 위임 핸들러
       const editLogBtn = e.target.closest('.btn-edit-drivelog');
       if (editLogBtn) {
         const logId = editLogBtn.dataset.id;
-        const logToEdit = (AppStore.state.data.DriveLogs || []).find(l => l.log_id === logId);
+        const logToEdit = (AppStore.state.data.DriveLogs || []).find(l => String(l.log_id) === String(logId));
         if (logToEdit) {
           openDriveLogModal(logToEdit);
         }
@@ -618,13 +629,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const deleteLogBtn = e.target.closest('.btn-delete-drivelog');
       if (deleteLogBtn) {
         const logId = deleteLogBtn.dataset.id;
-        const logToDelete = (AppStore.state.data.DriveLogs || []).find(l => l.log_id === logId);
+        const logToDelete = (AppStore.state.data.DriveLogs || []).find(l => String(l.log_id) === String(logId));
         if (logToDelete) {
           if (confirm(`🗑️ [${logToDelete.date}] (${logToDelete.driver_name}) 운행일지 기록을 삭제하시겠습니까?`)) {
             await AppStore.deleteDriveLog(logId);
             showToast(`🗑️ 차량 운행일지가 성공적으로 삭제되었습니다.`);
           }
         }
+        return;
       }
     });
   }
@@ -942,28 +954,28 @@ document.addEventListener('DOMContentLoaded', () => {
       : (vehicleLogs.length > 0 && Number(vehicleLogs[0].end_km) > 0 ? Number(vehicleLogs[0].end_km) : (activeVeh.current_mileage || 0));
 
     const defaultDate = logToEdit 
-      ? logToEdit.date 
+      ? (logToEdit.date || '')
       : (linkedRequest ? (linkedRequest.drive_date || '').replace(/T.*/, '') : new Date().toISOString().split('T')[0]);
 
     const defaultDriver = logToEdit 
-      ? logToEdit.driver_name 
-      : (linkedRequest ? (linkedRequest.driver_name || linkedRequest.applicant_name) : user.name);
+      ? (logToEdit.driver_name || '')
+      : (linkedRequest ? (linkedRequest.driver_name || linkedRequest.applicant_name || '') : (user.name || ''));
 
     const defaultDepart = logToEdit 
-      ? logToEdit.depart_time 
+      ? (logToEdit.depart_time || '')
       : (linkedRequest ? (linkedRequest.start_time || '16:00').slice(0, 5) : '16:00');
 
     const defaultArrival = logToEdit 
-      ? logToEdit.arrival_time 
+      ? (logToEdit.arrival_time || '')
       : (linkedRequest ? (linkedRequest.end_time || '16:45').slice(0, 5) : '16:45');
 
     const defaultDest = logToEdit 
-      ? logToEdit.destination 
+      ? (logToEdit.destination || '')
       : (linkedRequest ? (linkedRequest.destination || (linkedRequest.purpose || '').match(/^([^\s(]+)/)?.[1] || '') : '');
 
     const defaultPurpose = logToEdit 
-      ? logToEdit.purpose 
-      : (linkedRequest ? linkedRequest.purpose : '');
+      ? (logToEdit.purpose || '')
+      : (linkedRequest ? (linkedRequest.purpose || '') : '');
 
     const defaultEndKm = logToEdit ? logToEdit.end_km : (lastEndKm > 0 ? lastEndKm + 25 : 25);
     const defaultHipassBalance = logToEdit ? (logToEdit.hipass_balance || 0) : 35000;

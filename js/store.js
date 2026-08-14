@@ -407,7 +407,7 @@ const AppStore = {
    * 운행 신청 삭제 (취소)
    */
   async deleteDriveRequest(requestId) {
-    const updatedReqs = (this.state.data.DriveRequests || []).filter(r => r.request_id !== requestId);
+    const updatedReqs = (this.state.data.DriveRequests || []).filter(r => String(r.request_id) !== String(requestId));
     const updatedData = { ...this.state.data, DriveRequests: updatedReqs };
 
     AppAPI.saveStorage(updatedData);
@@ -422,7 +422,7 @@ const AppStore = {
    * 운행일지 삭제
    */
   async deleteDriveLog(logId) {
-    const updatedLogs = (this.state.data.DriveLogs || []).filter(l => l.log_id !== logId);
+    const updatedLogs = (this.state.data.DriveLogs || []).filter(l => String(l.log_id) !== String(logId));
     const updatedData = { ...this.state.data, DriveLogs: updatedLogs };
 
     AppAPI.saveStorage(updatedData);
@@ -438,7 +438,7 @@ const AppStore = {
    */
   async updateDriveLog(logData) {
     const logs = [...(this.state.data.DriveLogs || [])];
-    const idx = logs.findIndex(l => l.log_id === logData.log_id);
+    const idx = logs.findIndex(l => String(l.log_id) === String(logData.log_id));
     if (idx !== -1) {
       logs[idx] = { ...logs[idx], ...logData };
       const updatedData = { ...this.state.data, DriveLogs: logs };

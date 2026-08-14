@@ -1103,6 +1103,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   font-weight: 700;
   color: var(--text-main);
   text-align: center;
+  word-break: keep-all;
+  white-space: nowrap;
 }
 
 .service-discount-tag {
