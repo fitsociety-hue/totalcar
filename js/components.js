@@ -996,6 +996,155 @@ const AppComponents = {
         </div>
       </div>
     `;
+  },
+
+  /**
+   * 알림 & 협의 메시지함 모달 렌더러
+   */
+  renderNotificationInboxModal(notifications, currentUser) {
+    const notifs = notifications || [];
+    const unreadCount = notifs.filter(n => !n.is_read).length;
+
+    let listHtml = '';
+    if (notifs.length === 0) {
+      listHtml = `
+        <div style="text-align:center; padding:36px 16px; color:var(--text-muted);">
+          <div style="font-size:2.5rem; margin-bottom:12px;">🔔</div>
+          <div style="font-size:0.95rem; font-weight:600; color:var(--text-main); margin-bottom:4px;">도착한 알림 및 협의 메시지가 없습니다.</div>
+          <div style="font-size:0.8rem; color:var(--text-dim);">차량 운행 중복 시 협의 요청이나 시스템 알림이 여기에 표시됩니다.</div>
+        </div>
+      `;
+    } else {
+      listHtml = notifs.map(n => {
+        const isUnread = !n.is_read;
+        const isNegotiation = n.type === '협의요청';
+        const isReply = n.type === '협의응답';
+        
+        let statusBadge = '';
+        if (n.status === '수락') {
+          statusBadge = '<span style="background:rgba(34,197,94,0.2); color:#86EFAC; border:1px solid rgba(34,197,94,0.4); padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">✅ 수락됨</span>';
+        } else if (n.status === '거절') {
+          statusBadge = '<span style="background:rgba(239,68,68,0.2); color:#FCA5A5; border:1px solid rgba(239,68,68,0.4); padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">❌ 거절됨</span>';
+        } else if (n.status === '대기중') {
+          statusBadge = '<span style="background:rgba(234,179,8,0.2); color:#FDE047; border:1px solid rgba(234,179,8,0.4); padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">⏳ 대기중</span>';
+        } else {
+          statusBadge = `<span style="background:rgba(59,130,246,0.2); color:#93C5FD; border:1px solid rgba(59,130,246,0.4); padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">💬 ${n.status || '확인'}</span>`;
+        }
+
+        const isRecipient = currentUser && ((n.recipient_name && n.recipient_name === currentUser.name) || (n.recipient_id && n.recipient_id === currentUser.user_id));
+
+        return `
+          <div class="glass-card" style="padding:14px; margin-bottom:12px; border-radius:var(--radius-md); border:${isUnread ? '1px solid var(--accent-gold)' : '1px solid var(--border-glass)'}; background:${isUnread ? 'rgba(229,169,60,0.05)' : 'rgba(255,255,255,0.02)'};">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                ${isUnread ? '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#EF4444;" title="읽지 않음"></span>' : ''}
+                <span style="font-weight:700; font-size:0.9rem; color:var(--text-main);">${n.title || '알림'}</span>
+                ${statusBadge}
+              </div>
+              <span style="font-size:0.72rem; color:var(--text-dim); white-space:nowrap;">${n.created_at || ''}</span>
+            </div>
+
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:6px; display:flex; flex-wrap:wrap; gap:8px 12px; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:var(--radius-sm);">
+              <div>👤 <strong>보낸이:</strong> <span style="color:var(--text-main);">${n.sender_name || '익명'}</span></div>
+              <div>➔ <strong>받는이:</strong> <span style="color:var(--accent-gold);">${n.recipient_name || '전체'}</span></div>
+              ${n.vehicle_id ? `<div>🚘 <strong>차량:</strong> <span style="color:var(--text-main);">${n.vehicle_id}</span></div>` : ''}
+              ${n.drive_date ? `<div>📅 <strong>운행일:</strong> <span style="color:var(--text-main);">${n.drive_date}</span></div>` : ''}
+            </div>
+
+            ${n.suggested_time || n.suggested_vehicle ? `
+              <div style="font-size:0.8rem; margin-bottom:8px; padding:6px 10px; background:rgba(59,130,246,0.1); border-left:3px solid #3B82F6; border-radius:0 4px 4px 0;">
+                ${n.suggested_time ? `<div>⏰ <strong>희망 조정 시간:</strong> <span style="color:#93C5FD; font-weight:700;">${n.suggested_time}</span></div>` : ''}
+                ${n.suggested_vehicle ? `<div>🔄 <strong>대체 제안 차량:</strong> <span style="color:#93C5FD; font-weight:700;">${n.suggested_vehicle}</span></div>` : ''}
+              </div>
+            ` : ''}
+
+            <div style="font-size:0.85rem; color:var(--text-main); line-height:1.45; padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:var(--radius-sm); border-left:3px solid var(--accent-gold); margin-bottom:8px; white-space:pre-wrap;">${n.message || ''}</div>
+
+            ${n.reply_message ? `
+              <div style="font-size:0.82rem; color:#A7F3D0; line-height:1.4; padding:8px 10px; background:rgba(16,185,129,0.1); border-radius:var(--radius-sm); border-left:3px solid #10B981; margin-bottom:8px;">
+                <strong>↩️ 회신 답변:</strong> ${n.reply_message}
+              </div>
+            ` : ''}
+
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);">
+              ${(isRecipient && isNegotiation && n.status === '대기중') ? `
+                <button class="btn-primary btn-reply-notif" data-id="${n.notif_id}" style="padding:4px 10px; font-size:0.75rem; width:auto; background:linear-gradient(135deg, #3B82F6, #1D4ED8);">
+                  💬 답장 / 협의 응답
+                </button>
+              ` : ''}
+              ${isUnread ? `
+                <button class="btn-secondary btn-mark-read-notif" data-id="${n.notif_id}" style="padding:4px 8px; font-size:0.75rem; width:auto;">
+                  ✓ 읽음
+                </button>
+              ` : ''}
+              <button class="btn-secondary btn-delete-notif" data-id="${n.notif_id}" style="padding:4px 8px; font-size:0.75rem; width:auto; color:var(--status-rose);">
+                🗑️ 삭제
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    return `
+      <div class="modal-body glass-panel" style="max-height:85vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3 style="font-size:1.1rem; color:var(--accent-gold); margin:0;">🔔 알림 & 협의 메시지함</h3>
+            ${unreadCount > 0 ? `<span style="background:var(--status-rose); color:#FFF; font-size:0.72rem; padding:1px 7px; border-radius:10px; font-weight:700;">${unreadCount}건 안읽음</span>` : ''}
+          </div>
+          <button class="modal-close-btn" style="color:var(--text-muted); font-size:1.1rem;">✕</button>
+        </div>
+
+        <div style="overflow-y:auto; flex:1; padding-right:4px;">
+          ${listHtml}
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * 협의 메시지 회신/답장 모달 렌더러
+   */
+  renderNotificationReplyModal(notif, currentUser) {
+    return `
+      <div class="modal-body glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-glass); padding-bottom:8px;">
+          <h3 style="font-size:1.1rem; color:var(--accent-gold);">💬 협의 요청 답장 및 회신</h3>
+          <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
+        </div>
+
+        <div style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); padding:12px; border-radius:var(--radius-sm); margin-bottom:16px; font-size:0.83rem;">
+          <div style="font-weight:700; color:#93C5FD; margin-bottom:4px;">📩 도착한 협의 요청 요약</div>
+          <div>👤 <strong>신청자:</strong> ${notif.sender_name || '신청자'} | 🚘 <strong>차량:</strong> ${notif.vehicle_id || '-'}</div>
+          ${notif.suggested_time ? `<div>⏰ <strong>조정 희망시간:</strong> ${notif.suggested_time}</div>` : ''}
+          ${notif.suggested_vehicle ? `<div>🔄 <strong>대체 제안차량:</strong> ${notif.suggested_vehicle}</div>` : ''}
+          <div style="margin-top:4px; color:var(--text-main); font-style:italic;">"${notif.message || ''}"</div>
+        </div>
+
+        <form id="notification-reply-form">
+          <input type="hidden" name="notif_id" value="${notif.notif_id}">
+
+          <div class="form-group">
+            <label>협의 처리 결과 선택 *</label>
+            <select name="status" class="form-control" required>
+              <option value="수락">✅ 수락 (요청하신 시간/차량 조정에 동의합니다)</option>
+              <option value="거절">❌ 거절 (일정 조율이 불가하여 기존 예약을 유지합니다)</option>
+              <option value="추가조정">🔄 추가조정 (다른 대안 시간 또는 조건 협의)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>답장 및 회신 메시지 *</label>
+            <textarea name="reply_message" class="form-control" rows="3" placeholder="예: 네, 말씀해주신 12시 이후로 운행 시간 변경해 드리겠습니다. 신청서 수정 완료했습니다." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFF;">
+            💬 회신 메시지 전송
+          </button>
+        </form>
+      </div>
+    `;
   }
 };
 

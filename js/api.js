@@ -17,7 +17,7 @@ const AppAPI = {
     try {
       const parsed = JSON.parse(existing);
       // 필수 배열 키 유효성 방어 (누락 시 MOCK_DATA의 기본값 복원 및 더미 차량 236루5818 클린징)
-      const keys = ['Users', 'Vehicles', 'DriveLogs', 'DriveRequests', 'Fuel', 'Maintenance', 'Accidents', 'Insurance'];
+      const keys = ['Users', 'Vehicles', 'DriveLogs', 'DriveRequests', 'Fuel', 'Maintenance', 'Accidents', 'Insurance', 'Notifications'];
       keys.forEach(k => {
         if (!parsed[k] || !Array.isArray(parsed[k]) || parsed[k].length === 0) {
           if (MOCK_DATA[k] && Array.isArray(MOCK_DATA[k])) {
@@ -283,6 +283,41 @@ const AppAPI = {
         db.Insurance = db.Insurance.filter(i => i.vehicle_id !== payload.vehicle_id);
         this.saveStorage(db);
         return { success: true };
+      }
+
+      case 'createNotification': {
+        if (!db.Notifications) db.Notifications = [];
+        const newNotif = {
+          notif_id: payload.notif_id || `NOTIF-${Date.now()}`,
+          created_at: new Date().toISOString().replace('T', ' ').slice(0, 16),
+          status: '대기중',
+          is_read: false,
+          ...payload
+        };
+        db.Notifications.unshift(newNotif);
+        this.saveStorage(db);
+        return { status: 'success', notif_id: newNotif.notif_id };
+      }
+
+      case 'updateNotification': {
+        if (!db.Notifications) db.Notifications = [];
+        const idx = db.Notifications.findIndex(n => String(n.notif_id) === String(payload.notif_id));
+        if (idx !== -1) {
+          db.Notifications[idx] = {
+            ...db.Notifications[idx],
+            ...payload
+          };
+          this.saveStorage(db);
+          return { status: 'success', notif_id: payload.notif_id };
+        }
+        return { status: 'error', message: '알림을 찾을 수 없습니다.' };
+      }
+
+      case 'deleteNotification': {
+        if (!db.Notifications) db.Notifications = [];
+        db.Notifications = db.Notifications.filter(n => String(n.notif_id) !== String(payload.notif_id));
+        this.saveStorage(db);
+        return { status: 'success', notif_id: payload.notif_id };
       }
 
       case 'loginUser': {

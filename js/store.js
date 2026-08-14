@@ -474,30 +474,195 @@ const AppStore = {
   },
 
   /**
-   * 운행 시간 / 차량 변경 협의 요청 전송
+   * 운행 시간 / 차량 변경 협의 요청 전송 (구글 시트 연동)
    */
   async sendTimeNegotiationRequest(payload) {
-    const { target_vehicle_id, drive_date, my_name, suggested_start, suggested_end, suggested_vehicle, message } = payload;
+    const user = this.state.currentUser;
+    const { 
+      target_vehicle_id, 
+      drive_date, 
+      my_name, 
+      sender_id,
+      sender_name,
+      recipient_id,
+      recipient_name,
+      suggested_start, 
+      suggested_end, 
+      suggested_vehicle, 
+      message 
+    } = payload;
 
-    const notifMsg = `💬 [${my_name}] 님으로부터 [${target_vehicle_id}] (${drive_date}) 차량 운행 변경 협의가 도착했습니다:\n- 메시지: "${message}"\n- 조정 제안시간: ${suggested_start && suggested_end ? `${suggested_start}~${suggested_end}` : '기존 동일'}${suggested_vehicle ? `\n- 대체 추천차량: ${suggested_vehicle}` : ''}`;
+    const sName = sender_name || my_name || (user ? user.name : '신청자');
+    const sId = sender_id || (user ? user.user_id : '');
+    const rName = recipient_name || '우선예약자';
+    const rId = recipient_id || '';
+    const sugTime = (suggested_start && suggested_end) ? `${suggested_start}~${suggested_end}` : '';
 
     const newNotif = {
-      id: `NOTIF-${Date.now()}`,
-      type: 'WARN',
-      title: '💬 차량 운행 시간/차량 변경 협의 요청',
-      message: notifMsg,
-      read: false,
-      date: new Date().toISOString().replace('T', ' ').slice(0, 16)
+      notif_id: `NOTIF-${Date.now()}`,
+      type: '협의요청',
+      sender_id: sId,
+      sender_name: sName,
+      recipient_id: rId,
+      recipient_name: rName,
+      vehicle_id: target_vehicle_id || '',
+      drive_date: drive_date || '',
+      title: `💬 [${target_vehicle_id}] 차량 운행 시간/차량 변경 협의 요청`,
+      message: message || '',
+      suggested_time: sugTime,
+      suggested_vehicle: suggested_vehicle || '',
+      status: '대기중',
+      reply_message: '',
+      is_read: false,
+      created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
     };
 
     const notifs = [newNotif, ...(this.state.data.Notifications || [])];
-    this.setState({ data: { ...this.state.data, Notifications: notifs } });
+    const updatedData = { ...this.state.data, Notifications: notifs };
+    AppAPI.saveStorage(updatedData);
+    this.setState({ data: updatedData });
 
     try {
-      await AppAPI.request('sendGoogleChatNotification', { text: notifMsg });
+      await AppAPI.request('createNotification', newNotif);
+    } catch (e) {
+      console.warn('createNotification GAS request failed:', e);
+    }
+
+    try {
+      const chatMsg = `💬 [${sName}] 님으로부터 [${target_vehicle_id}] (${drive_date}) 차량 운행 변경 협의가 도착했습니다:\n- 수신자: ${rName}\n- 메시지: "${message}"\n- 제안시간: ${sugTime || '기존 동일'}${suggested_vehicle ? `\n- 대체차량: ${suggested_vehicle}` : ''}`;
+      await AppAPI.request('sendGoogleChatNotification', { text: chatMsg });
     } catch (e) {}
 
-    return { success: true };
+    return { success: true, notif_id: newNotif.notif_id };
+  },
+
+  /**
+   * 협의 메시지에 대한 답장/응답 전송 (수락/거절/의견 회신)
+   */
+  async replyNotification(payload) {
+    const user = this.state.currentUser;
+    const { notif_id, status, reply_message, responder_name } = payload;
+    const notifs = [...(this.state.data.Notifications || [])];
+    const origIdx = notifs.findIndex(n => String(n.notif_id) === String(notif_id));
+
+    if (origIdx === -1) {
+      return { success: false, message: '원래 알림을 찾을 수 없습니다.' };
+    }
+
+    const orig = notifs[origIdx];
+    const respName = responder_name || (user ? user.name : orig.recipient_name || '예약자');
+
+    // 1. 원본 알림 상태 업데이트
+    orig.status = status || '응답완료';
+    orig.reply_message = reply_message || '';
+    orig.is_read = true;
+    notifs[origIdx] = orig;
+
+    // 2. 원 발신자에게 회신 알림 레코드 자동 생성
+    const replyNotif = {
+      notif_id: `NOTIF-${Date.now()}`,
+      type: '협의응답',
+      sender_id: user ? user.user_id : orig.recipient_id,
+      sender_name: respName,
+      recipient_id: orig.sender_id || '',
+      recipient_name: orig.sender_name || '',
+      vehicle_id: orig.vehicle_id || '',
+      drive_date: orig.drive_date || '',
+      title: `💬 [${orig.vehicle_id}] 협의 요청 회신 (${status})`,
+      message: reply_message || `협의 요청이 [${status}] 되었습니다.`,
+      suggested_time: orig.suggested_time || '',
+      suggested_vehicle: orig.suggested_vehicle || '',
+      status: status || '응답완료',
+      reply_message: '',
+      is_read: false,
+      created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+    };
+
+    notifs.unshift(replyNotif);
+    const updatedData = { ...this.state.data, Notifications: notifs };
+    AppAPI.saveStorage(updatedData);
+    this.setState({ data: updatedData });
+
+    // 3. 구글 시트 백엔드 반영
+    try {
+      await AppAPI.request('updateNotification', {
+        notif_id: orig.notif_id,
+        status: orig.status,
+        reply_message: orig.reply_message,
+        is_read: true
+      });
+      await AppAPI.request('createNotification', replyNotif);
+    } catch (e) {
+      console.warn('replyNotification GAS sync error:', e);
+    }
+
+    return { success: true, notif_id: replyNotif.notif_id };
+  },
+
+  /**
+   * 알림 읽음 처리
+   */
+  async markNotificationRead(notifId) {
+    const notifs = [...(this.state.data.Notifications || [])];
+    const idx = notifs.findIndex(n => String(n.notif_id) === String(notifId));
+    if (idx !== -1) {
+      notifs[idx].is_read = true;
+      const updatedData = { ...this.state.data, Notifications: notifs };
+      AppAPI.saveStorage(updatedData);
+      this.setState({ data: updatedData });
+
+      try {
+        await AppAPI.request('updateNotification', { notif_id: notifId, is_read: true });
+      } catch (e) {}
+    }
+  },
+
+  /**
+   * 알림 삭제
+   */
+  async deleteNotification(notifId) {
+    const notifs = (this.state.data.Notifications || []).filter(n => String(n.notif_id) !== String(notifId));
+    const updatedData = { ...this.state.data, Notifications: notifs };
+    AppAPI.saveStorage(updatedData);
+    this.setState({ data: updatedData });
+
+    try {
+      await AppAPI.request('deleteNotification', { notif_id: notifId });
+    } catch (e) {}
+  },
+
+  /**
+   * 현재 사용자와 관련된 알림 목록 가져오기
+   */
+  getUserNotifications(customUser = null) {
+    const user = customUser || this.state.currentUser;
+    const notifs = this.state.data.Notifications || [];
+    if (!user) return notifs;
+
+    // 본인이 수신자이거나 발신자인 알림, 또는 수신자가 지정되지 않은 전체 공지/알림
+    return notifs.filter(n => {
+      const isRecipient = (n.recipient_name && n.recipient_name === user.name) || (n.recipient_id && n.recipient_id === user.user_id);
+      const isSender = (n.sender_name && n.sender_name === user.name) || (n.sender_id && n.sender_id === user.user_id);
+      const isBroadcast = !n.recipient_name && !n.recipient_id;
+      const isAdmin = ['차량관리담당자', '사무국장', '관장'].includes(user.position);
+      return isRecipient || isSender || isBroadcast || isAdmin;
+    });
+  },
+
+  /**
+   * 읽지 않은 알림 개수 계산
+   */
+  getUnreadNotificationCount(customUser = null) {
+    const user = customUser || this.state.currentUser;
+    const notifs = this.state.data.Notifications || [];
+    if (!user) {
+      return notifs.filter(n => !n.is_read).length;
+    }
+    return notifs.filter(n => {
+      const isRecipient = (n.recipient_name && n.recipient_name === user.name) || (n.recipient_id && n.recipient_id === user.user_id);
+      const isBroadcast = !n.recipient_name && !n.recipient_id;
+      return (isRecipient || isBroadcast) && !n.is_read;
+    }).length;
   },
 
   /**

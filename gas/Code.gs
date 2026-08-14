@@ -92,6 +92,18 @@ function doPost(e) {
         resultData = deleteVehicleRecord(ss, contents);
         break;
 
+      case 'createNotification':
+        resultData = addNotificationRecord(ss, contents);
+        break;
+
+      case 'updateNotification':
+        resultData = updateNotificationRecord(ss, contents);
+        break;
+
+      case 'deleteNotification':
+        resultData = deleteNotificationRecord(ss, contents);
+        break;
+
       default:
         throw new Error('알 수 없는 Action 요청입니다: ' + action);
     }
@@ -117,7 +129,8 @@ var DEFAULT_HEADERS = {
   Fuel: ['fuel_id', 'vehicle_id', 'date', 'amount_won', 'liter', 'station', 'unit_price', 'note'],
   Maintenance: ['maint_id', 'vehicle_id', 'in_date', 'out_date', 'reason', 'detail', 'cost_total', 'insurance_claim', 'self_pay_org', 'self_pay_staff', 'next_due_date', 'receipt_file'],
   Accidents: ['accident_id', 'vehicle_id', 'date', 'driver_id', 'driver_name', 'location', 'accident_role', 'damage_person_yn', 'damage_person_detail', 'damage_property_yn', 'damage_property_detail', 'counterpart_name', 'counterpart_phone', 'counterpart_insurance', 'description', 'claim_number', 'insurance_process_date', 'processed_amount', 'linked_maint_id', 'attachment'],
-  Insurance: ['vehicle_id', 'company', 'policy_number', 'contractor', 'claim_phone', 'insurance_start', 'insurance_end', 'coverage']
+  Insurance: ['vehicle_id', 'company', 'policy_number', 'contractor', 'claim_phone', 'insurance_start', 'insurance_end', 'coverage'],
+  Notifications: ['notif_id', 'type', 'sender_id', 'sender_name', 'recipient_id', 'recipient_name', 'vehicle_id', 'drive_date', 'title', 'message', 'suggested_time', 'suggested_vehicle', 'status', 'reply_message', 'is_read', 'created_at']
 };
 
 /**
@@ -719,4 +732,73 @@ function deleteVehicleRecord(ss, data) {
   }
 
   return { success: true };
+}
+
+/**
+ * 알림 & 협의 메시지 추가
+ */
+function addNotificationRecord(ss, data) {
+  var sheet = ss.getSheetByName('Notifications');
+  if (!sheet) {
+    sheet = ss.insertSheet('Notifications');
+    sheet.appendRow(DEFAULT_HEADERS.Notifications);
+  }
+
+  var notifId = data.notif_id || ('NOTIF-' + Date.now());
+  sheet.appendRow([
+    notifId,
+    data.type || '협의요청',
+    data.sender_id || '',
+    data.sender_name || '',
+    data.recipient_id || '',
+    data.recipient_name || '',
+    data.vehicle_id || '',
+    data.drive_date || '',
+    data.title || '차량 운행 협의 요청',
+    data.message || '',
+    data.suggested_time || '',
+    data.suggested_vehicle || '',
+    data.status || '대기중',
+    data.reply_message || '',
+    data.is_read || false,
+    data.created_at || new Date().toISOString().replace('T', ' ').slice(0, 16)
+  ]);
+
+  return { status: 'success', notif_id: notifId };
+}
+
+/**
+ * 알림 & 협의 메시지 업데이트 (응답/수락/거절/읽음)
+ */
+function updateNotificationRecord(ss, data) {
+  var sheet = ss.getSheetByName('Notifications');
+  if (!sheet) return { status: 'error', message: 'Notifications 시트를 찾을 수 없습니다.' };
+
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(data.notif_id)) {
+      if (data.status !== undefined) sheet.getRange(i + 1, 13).setValue(data.status);
+      if (data.reply_message !== undefined) sheet.getRange(i + 1, 14).setValue(data.reply_message);
+      if (data.is_read !== undefined) sheet.getRange(i + 1, 15).setValue(data.is_read);
+      return { status: 'success', notif_id: data.notif_id };
+    }
+  }
+  return { status: 'error', message: '해당 알림을 찾을 수 없습니다.' };
+}
+
+/**
+ * 알림 & 협의 메시지 삭제
+ */
+function deleteNotificationRecord(ss, data) {
+  var sheet = ss.getSheetByName('Notifications');
+  if (!sheet) return { status: 'error', message: 'Notifications 시트를 찾을 수 없습니다.' };
+
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(data.notif_id)) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', notif_id: data.notif_id };
+    }
+  }
+  return { status: 'error', message: '해당 알림을 찾을 수 없습니다.' };
 }

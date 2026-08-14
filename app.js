@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnMobileLogin) btnMobileLogin.addEventListener('click', () => openLoginModal());
 
   const btnBell = document.getElementById('btn-mobile-bell');
-  if (btnBell) btnBell.addEventListener('click', () => showToast('🔔 새로운 알림이 없습니다.'));
+  if (btnBell) btnBell.addEventListener('click', () => openNotificationModal());
 
   const btnSettings = document.getElementById('btn-mobile-settings');
   if (btnSettings) btnSettings.addEventListener('click', () => showToast('⚙️ 시스템 설정 메뉴는 준비 중입니다.'));
@@ -196,6 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnLogin) btnLogin.style.display = 'inline-flex';
       if (btnSignup) btnSignup.style.display = 'inline-flex';
       if (btnLogout) btnLogout.style.display = 'none';
+    }
+
+    // 미확인 알림 배지 카운트 반영
+    const bellBadge = document.getElementById('bell-unread-badge');
+    const unreadCount = AppStore.getUnreadNotificationCount(currentUser);
+    if (bellBadge) {
+      bellBadge.style.display = unreadCount > 0 ? 'block' : 'none';
     }
 
     // [A] 모바일 뷰 렌더링 (탭별 분기 - 한 화면 1-Screen 최적화)
@@ -967,7 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openTimeNegotiationModal(priorReq, targetVehicleId, driveDate, startTime, endTime) {
-    const user = AppStore.state.currentUser || { name: '익명 직원' };
+    const user = AppStore.state.currentUser || { name: '신청자', user_id: 'GUEST' };
     const vehicles = AppStore.state.data.Vehicles || [];
 
     modalOverlay.innerHTML = AppComponents.renderTimeNegotiationModal(
@@ -984,19 +991,102 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const formData = new FormData(form);
-        await AppStore.sendTimeNegotiationRequest({
-          target_vehicle_id: targetVehicleId,
-          drive_date: driveDate,
-          my_name: user.name,
-          suggested_start: formData.get('suggested_start'),
-          suggested_end: formData.get('suggested_end'),
-          suggested_vehicle: formData.get('suggested_vehicle'),
-          message: formData.get('message')
-        });
+        setFormSavingState(form, true, '협의 요청 메시지 전송 중...');
+        try {
+          const formData = new FormData(form);
+          await AppStore.sendTimeNegotiationRequest({
+            target_vehicle_id: targetVehicleId,
+            drive_date: driveDate,
+            sender_id: user.user_id,
+            sender_name: user.name,
+            recipient_id: priorReq.applicant_id || '',
+            recipient_name: priorReq.applicant_name || '',
+            suggested_start: formData.get('suggested_start'),
+            suggested_end: formData.get('suggested_end'),
+            suggested_vehicle: formData.get('suggested_vehicle'),
+            message: formData.get('message')
+          });
 
-        closeModal();
-        showToast(`💬 [${priorReq.applicant_name}] 우선권 예약자에게 시간/차량 변경 협의 메시지가 전송되었습니다.`);
+          closeModal();
+          showToast(`💬 [${priorReq.applicant_name}] 우선권 예약자에게 협의 메시지가 성공적으로 전송되고 구글 시트에 기록되었습니다.`);
+        } finally {
+          setFormSavingState(form, false);
+        }
+      });
+    }
+  }
+
+  /**
+   * 알림함 & 협의 메시지 모달 오픈
+   */
+  function openNotificationModal() {
+    const currentUser = AppStore.state.currentUser;
+    const notifs = AppStore.getUserNotifications(currentUser);
+
+    modalOverlay.innerHTML = AppComponents.renderNotificationInboxModal(notifs, currentUser);
+    openModal();
+
+    // 답장하기 버튼 바인딩
+    modalOverlay.querySelectorAll('.btn-reply-notif').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const notifId = btn.dataset.id;
+        const targetNotif = (AppStore.state.data.Notifications || []).find(n => String(n.notif_id) === String(notifId));
+        if (targetNotif) {
+          openNotificationReplyModal(targetNotif);
+        }
+      });
+    });
+
+    // 읽음 처리 버튼 바인딩
+    modalOverlay.querySelectorAll('.btn-mark-read-notif').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const notifId = btn.dataset.id;
+        await AppStore.markNotificationRead(notifId);
+        showToast('✓ 알림을 읽음 처리했습니다.');
+        openNotificationModal();
+      });
+    });
+
+    // 삭제 버튼 바인딩
+    modalOverlay.querySelectorAll('.btn-delete-notif').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const notifId = btn.dataset.id;
+        if (confirm('이 알림/협의 메시지를 삭제하시겠습니까?')) {
+          await AppStore.deleteNotification(notifId);
+          showToast('🗑️ 알림이 삭제되었습니다.');
+          openNotificationModal();
+        }
+      });
+    });
+  }
+
+  /**
+   * 협의 요청 답장 및 회신 모달 오픈
+   */
+  function openNotificationReplyModal(notif) {
+    const currentUser = AppStore.state.currentUser;
+    modalOverlay.innerHTML = AppComponents.renderNotificationReplyModal(notif, currentUser);
+    openModal();
+
+    const replyForm = document.getElementById('notification-reply-form');
+    if (replyForm) {
+      replyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        setFormSavingState(replyForm, true, '회신 메시지 전송 중...');
+        try {
+          const formData = new FormData(replyForm);
+          await AppStore.replyNotification({
+            notif_id: notif.notif_id,
+            status: formData.get('status'),
+            reply_message: formData.get('reply_message'),
+            responder_name: currentUser ? currentUser.name : notif.recipient_name
+          });
+
+          showToast(`💬 [${notif.sender_name}] 님에게 협의 회신 메시지가 전송되었습니다.`);
+          openNotificationModal();
+        } finally {
+          setFormSavingState(replyForm, false);
+        }
       });
     }
   }

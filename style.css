@@ -1162,3 +1162,23 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .floating-fab-btn:active {
   transform: scale(0.92);
 }
+
+/* 알림 벨 아이콘 미확인 배지 */
+.bell-unread-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--status-rose);
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-surface);
+  box-shadow: 0 0 6px var(--status-rose);
+  animation: pulse-dot 1.8s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 10px var(--status-rose); }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
