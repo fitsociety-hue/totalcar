@@ -72,6 +72,12 @@ const AppStore = {
 
       const users = validData.Users || MOCK_DATA.Users;
       
+      // [수정] 비동기 요청 도중 사용자가 수동으로 로그아웃했을 수 있으므로 세션 유지 여부 재확인
+      const currentSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
+      if (!currentSession) {
+        restoredUser = null;
+      }
+
       // DB 유저 목록에서 세션 유저와 매칭하여 최신 정보로 교체
       if (restoredUser) {
         const matchedUser = users.find(u => u.user_id === restoredUser.user_id || u.email === restoredUser.email);
@@ -92,8 +98,10 @@ const AppStore = {
       });
     } catch (e) {
       console.error('Initial data load error:', e);
-      // API 실패 시에도 세션 유저 유지
-      this.setState({ loading: false, currentUser: restoredUser || this.state.currentUser || null });
+      // API 실패 시에도 세션 유저 유지 (단, 로그아웃한 상태라면 무시)
+      const currentSession = localStorage.getItem(APP_CONFIG.SESSION_USER_KEY);
+      const fallbackUser = currentSession ? (restoredUser || this.state.currentUser || null) : null;
+      this.setState({ loading: false, currentUser: fallbackUser });
     }
   },
 
