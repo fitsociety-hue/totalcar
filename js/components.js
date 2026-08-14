@@ -1003,7 +1003,8 @@ const AppComponents = {
    */
   renderNotificationInboxModal(notifications, currentUser) {
     const notifs = notifications || [];
-    const unreadCount = notifs.filter(n => !n.is_read).length;
+    const checkRead = (val) => val === true || val === 'true' || val === 'TRUE' || val === 'Y' || val === '1';
+    const unreadCount = notifs.filter(n => !checkRead(n.is_read)).length;
 
     let listHtml = '';
     if (notifs.length === 0) {
@@ -1016,7 +1017,7 @@ const AppComponents = {
       `;
     } else {
       listHtml = notifs.map(n => {
-        const isUnread = !n.is_read;
+        const isUnread = !checkRead(n.is_read);
         const isNegotiation = n.type === '협의요청';
         const isReply = n.type === '협의응답';
         
@@ -1032,6 +1033,8 @@ const AppComponents = {
         }
 
         const isRecipient = currentUser && ((n.recipient_name && n.recipient_name === currentUser.name) || (n.recipient_id && n.recipient_id === currentUser.user_id));
+        const isAdmin = currentUser && ['차량관리담당자', '사무국장', '관장'].includes(currentUser.position);
+        const canReply = isNegotiation && (isRecipient || isAdmin);
 
         return `
           <div class="glass-card" style="padding:14px; margin-bottom:12px; border-radius:var(--radius-md); border:${isUnread ? '1px solid var(--accent-gold)' : '1px solid var(--border-glass)'}; background:${isUnread ? 'rgba(229,169,60,0.05)' : 'rgba(255,255,255,0.02)'};">
@@ -1067,9 +1070,9 @@ const AppComponents = {
             ` : ''}
 
             <div style="display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);">
-              ${(isRecipient && isNegotiation && n.status === '대기중') ? `
+              ${canReply ? `
                 <button class="btn-primary btn-reply-notif" data-id="${n.notif_id}" style="padding:4px 10px; font-size:0.75rem; width:auto; background:linear-gradient(135deg, #3B82F6, #1D4ED8);">
-                  💬 답장 / 협의 응답
+                  💬 ${n.status === '대기중' ? '답장 / 협의 응답' : '추가 답장'}
                 </button>
               ` : ''}
               ${isUnread ? `

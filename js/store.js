@@ -87,6 +87,16 @@ const AppStore = {
         // DB에 없어도 localStorage 세션 유저 유지 (세션 무효화 방지)
       }
 
+      // Notifications 시트 데이터 정규화 (is_read 불리언 정규화)
+      if (validData && Array.isArray(validData.Notifications)) {
+        validData.Notifications = validData.Notifications.map(n => ({
+          ...n,
+          is_read: !(n.is_read === false || n.is_read === 'false' || n.is_read === 'FALSE' || n.is_read === 'N' || n.is_read === '0' || !n.is_read)
+        }));
+      } else if (this.state.data.Notifications && Array.isArray(this.state.data.Notifications)) {
+        validData.Notifications = this.state.data.Notifications;
+      }
+
       const defaultUser = restoredUser || this.state.currentUser || null;
       const defaultVeh = (validData.Vehicles && validData.Vehicles[0]) ? validData.Vehicles[0].vehicle_id : '365라 1271';
       
@@ -96,6 +106,7 @@ const AppStore = {
         activeVehicleId: defaultVeh,
         loading: false
       });
+      AppAPI.saveStorage(validData);
     } catch (e) {
       console.error('Initial data load error:', e);
       // API 실패 시에도 세션 유저 유지 (단, 로그아웃한 상태라면 무시)
@@ -655,13 +666,16 @@ const AppStore = {
   getUnreadNotificationCount(customUser = null) {
     const user = customUser || this.state.currentUser;
     const notifs = this.state.data.Notifications || [];
+    const isUnread = (n) => !(n.is_read === true || n.is_read === 'true' || n.is_read === 'TRUE' || n.is_read === 'Y' || n.is_read === '1');
+
     if (!user) {
-      return notifs.filter(n => !n.is_read).length;
+      return notifs.filter(isUnread).length;
     }
     return notifs.filter(n => {
       const isRecipient = (n.recipient_name && n.recipient_name === user.name) || (n.recipient_id && n.recipient_id === user.user_id);
       const isBroadcast = !n.recipient_name && !n.recipient_id;
-      return (isRecipient || isBroadcast) && !n.is_read;
+      const isAdmin = ['차량관리담당자', '사무국장', '관장'].includes(user.position);
+      return (isRecipient || isBroadcast || isAdmin) && isUnread(n);
     }).length;
   },
 
