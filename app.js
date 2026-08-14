@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const btnDeskAdd = document.getElementById('btn-desktop-add-veh');
       if (btnDeskAdd) btnDeskAdd.addEventListener('click', () => openVehicleModal());
       const btnDeskReq = document.getElementById('btn-desktop-request');
-      if (btnDeskReq) btnDeskReq.addEventListener('click', openRequestModal);
+      if (btnDeskReq) btnDeskReq.addEventListener('click', () => openRequestModal());
       const btnDeskRep = document.getElementById('btn-desktop-report');
       if (btnDeskRep) btnDeskRep.addEventListener('click', openMonthlyReportModal);
       bindTabButtons();
@@ -473,10 +473,10 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function bindTabButtons() {
     const btnReq = document.getElementById('btn-open-request-modal');
-    if (btnReq) btnReq.addEventListener('click', openRequestModal);
+    if (btnReq) btnReq.addEventListener('click', () => openRequestModal());
 
     const btnLog = document.getElementById('btn-open-drivelog-modal');
-    if (btnLog) btnLog.addEventListener('click', openDriveLogModal);
+    if (btnLog) btnLog.addEventListener('click', () => openDriveLogModal());
 
     const btnAcc = document.getElementById('btn-open-accident-modal');
     if (btnAcc) btnAcc.addEventListener('click', openAccidentModal);
@@ -489,9 +489,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. 상단 캡슐 칩 메뉴 클릭 이벤트
     const chipReq = document.getElementById('chip-btn-request');
-    if (chipReq) chipReq.addEventListener('click', openRequestModal);
+    if (chipReq) chipReq.addEventListener('click', () => openRequestModal());
+
     const chipLog = document.getElementById('chip-btn-drivelog');
-    if (chipLog) chipLog.addEventListener('click', openDriveLogModal);
+    if (chipLog) chipLog.addEventListener('click', () => openDriveLogModal());
     const chipFuel = document.getElementById('chip-btn-fuel');
     if (chipFuel) chipFuel.addEventListener('click', openFuelModal);
     const chipReport = document.getElementById('chip-btn-report');
@@ -501,13 +502,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 4종 퀵 서비스 그리드 클릭 이벤트
     const qReq = document.getElementById('quick-service-request');
-    if (qReq) qReq.addEventListener('click', openRequestModal);
+    if (qReq) qReq.addEventListener('click', () => openRequestModal());
     const qLog = document.getElementById('quick-service-drivelog');
-    if (qLog) qLog.addEventListener('click', openDriveLogModal);
+    if (qLog) qLog.addEventListener('click', () => openDriveLogModal());
     const qFuel = document.getElementById('quick-service-fuel');
-    if (qFuel) qFuel.addEventListener('click', openFuelModal);
+    if (qFuel) qFuel.addEventListener('click', () => openFuelModal());
     const qAcc = document.getElementById('quick-service-accident');
-    if (qAcc) qAcc.addEventListener('click', openAccidentModal);
+    if (qAcc) qAcc.addEventListener('click', () => openAccidentModal());
 
     // 3. (제거된 영웅 카드 버튼 리스너 영역)
 
@@ -936,7 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkedRequests = allRequests.filter(r => 
       String(r.vehicle_id).trim() === String(activeVeh.vehicle_id).trim() && 
       (!r.approval_status || r.approval_status !== '반려') &&
-      r.applicant_name === user.name
+      (r.applicant_name === user.name || r.applicant_id === user.user_id || r.driver_name === user.name)
     );
 
     if (!linkedRequest && !logToEdit) {
@@ -994,13 +995,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <input type="hidden" name="log_id" value="${logToEdit ? logToEdit.log_id : ''}">
           <input type="hidden" name="vehicle_id" value="${activeVeh.vehicle_id}">
 
-          ${!logToEdit ? `
           <div class="form-group">
             <label style="color:var(--status-emerald); font-weight:700;">📋 차량 운행 신청서 불러오기 (선택 시 자동채움)</label>
             <select name="request_id" class="form-control" id="linked-request-select" style="border-color:var(--status-emerald); background:rgba(16,185,129,0.08);">
               <option value="">-- 운행 신청서 직접 선택 --</option>
               ${linkedRequests.map(r => `
-                <option value="${r.request_id}" ${r.request_id === selectedReqId ? 'selected' : ''} 
+                <option value="${r.request_id}" ${String(r.request_id) === String(selectedReqId) ? 'selected' : ''} 
                   data-date="${r.drive_date}" 
                   data-start="${r.start_time}" 
                   data-end="${r.end_time}" 
@@ -1012,7 +1012,6 @@ document.addEventListener('DOMContentLoaded', () => {
               `).join('')}
             </select>
           </div>
-          ` : `<input type="hidden" name="request_id" value="${logToEdit.request_id || ''}">`}
 
           <div class="form-group">
             <label>운행일자 / 운전자 *</label>
