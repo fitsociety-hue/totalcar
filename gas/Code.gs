@@ -308,6 +308,23 @@ function deleteDriveRequest(ss, data) {
 }
 
 /**
+ * 운행일지 기록 삭제
+ */
+function deleteDriveLog(ss, data) {
+  var sheet = ss.getSheetByName('DriveLogs');
+  if (!sheet) return { status: 'error', message: '시트를 찾을 수 없습니다.' };
+
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(data.log_id)) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', log_id: data.log_id };
+    }
+  }
+  return { status: 'error', message: '삭제할 운행일지를 찾을 수 없습니다.' };
+}
+
+/**
  * 운행일지 추가 & 누적거리 자동 업데이트
  */
 function addDriveLog(ss, data) {

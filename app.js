@@ -616,9 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // 예약 현황 수정 / 삭제 (취소) 이벤트 위임 핸들러
-    document.addEventListener('click', async (e) => {
-      const editBtn = e.target.closest('.btn-edit-request');
+    // 예약 현황 수정 / 삭제 (취소) 이벤트 위임 핸들러 (중복 바인딩 방지)
+    if (!window._globalDelegationBound) {
+      window._globalDelegationBound = true;
+      document.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.btn-edit-request');
       if (editBtn) {
         if (!requireAuth()) return;
         const reqId = editBtn.dataset.id;
@@ -708,9 +710,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         }
-        return;
       }
     });
+    } // End of window._globalDelegationBound
   }
 
   /**
