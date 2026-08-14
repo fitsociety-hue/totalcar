@@ -269,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         ${AppComponents.renderVehicleManagementPanel(data.Vehicles, data.Insurance)}
-        ${AppComponents.renderGoogleWorkspacePanel()}
       `;
 
       // 데스크톱 상단 버튼 이벤트 바인딩
