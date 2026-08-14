@@ -549,12 +549,12 @@ const AppComponents = {
         <form id="auth-login-form" style="display:flex; flex-direction:column; gap:20px;">
           <div class="form-group" style="margin-bottom:0;">
             <label style="display:block; margin-bottom:8px; font-weight:600; font-size:0.88rem; color:var(--text-main);">복지관 구글 메일 계정 (@gde.or.kr) 또는 아이디 *</label>
-            <input type="text" name="identity" class="form-control" placeholder="구글 메일 주소 (예: kim@gde.or.kr)" style="padding:12px 14px; font-size:0.95rem; border-radius:var(--radius-sm);" required value="kim@gde.or.kr">
+            <input type="text" name="identity" class="form-control" placeholder="구글 메일 주소 (예: kim@gde.or.kr)" style="padding:12px 14px; font-size:0.95rem; border-radius:var(--radius-sm);" value="kim@gde.or.kr">
           </div>
 
           <div class="form-group" style="margin-bottom:0;">
             <label style="display:block; margin-bottom:8px; font-weight:600; font-size:0.88rem; color:var(--text-main);">비밀번호 *</label>
-            <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" style="padding:12px 14px; font-size:0.95rem; border-radius:var(--radius-sm);" required>
+            <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" style="padding:12px 14px; font-size:0.95rem; border-radius:var(--radius-sm);">
           </div>
 
           <div id="login-error-msg" style="display:none; color:var(--status-rose); font-size:0.82rem; font-weight:600; padding:4px 0;"></div>

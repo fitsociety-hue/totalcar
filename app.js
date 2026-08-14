@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 상단바 로그인/회원가입/로그아웃 버튼 핸들러
   const btnHeaderLogin = document.getElementById('btn-header-login');
-  if (btnHeaderLogin) btnHeaderLogin.addEventListener('click', openLoginModal);
+  if (btnHeaderLogin) btnHeaderLogin.addEventListener('click', () => openLoginModal());
 
   const btnHeaderSignup = document.getElementById('btn-header-signup');
-  if (btnHeaderSignup) btnHeaderSignup.addEventListener('click', openSignupModal);
+  if (btnHeaderSignup) btnHeaderSignup.addEventListener('click', () => openSignupModal());
 
   const btnHeaderLogout = document.getElementById('btn-header-logout');
   if (btnHeaderLogout) btnHeaderLogout.addEventListener('click', () => {
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const btnMobileLogin = document.getElementById('btn-mobile-login');
-  if (btnMobileLogin) btnMobileLogin.addEventListener('click', openLoginModal);
+  if (btnMobileLogin) btnMobileLogin.addEventListener('click', () => openLoginModal());
 
   const btnBell = document.getElementById('btn-mobile-bell');
   if (btnBell) btnBell.addEventListener('click', () => showToast('🔔 새로운 알림이 없습니다.'));
@@ -468,58 +468,72 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
+   * 로그인 체크 가드
+   */
+  function requireAuth(callback) {
+    if (!AppStore.state.currentUser) {
+      showToast('🔒 로그인이 필요한 서비스입니다. 먼저 로그인해 주세요.', 'error');
+      openLoginModal();
+      return false;
+    }
+    if (callback) callback();
+    return true;
+  }
+
+  /**
    * 탭 내 동적 버튼 이벤트 바인딩
    */
   function bindTabButtons() {
     const btnReq = document.getElementById('btn-open-request-modal');
-    if (btnReq) btnReq.addEventListener('click', () => openRequestModal());
+    if (btnReq) btnReq.addEventListener('click', () => requireAuth(() => openRequestModal()));
 
     const btnLog = document.getElementById('btn-open-drivelog-modal');
-    if (btnLog) btnLog.addEventListener('click', () => openDriveLogModal());
+    if (btnLog) btnLog.addEventListener('click', () => requireAuth(() => openDriveLogModal()));
 
     const btnAcc = document.getElementById('btn-open-accident-modal');
-    if (btnAcc) btnAcc.addEventListener('click', openAccidentModal);
+    if (btnAcc) btnAcc.addEventListener('click', () => requireAuth(() => openAccidentModal()));
 
     const btnFuel = document.getElementById('btn-open-fuel-modal');
-    if (btnFuel) btnFuel.addEventListener('click', openFuelModal);
+    if (btnFuel) btnFuel.addEventListener('click', () => requireAuth(() => openFuelModal()));
 
     const btnRep = document.getElementById('btn-open-monthly-report');
-    if (btnRep) btnRep.addEventListener('click', openMonthlyReportModal);
+    if (btnRep) btnRep.addEventListener('click', () => requireAuth(() => openMonthlyReportModal()));
 
     // 1. 상단 캡슐 칩 메뉴 클릭 이벤트
     const chipReq = document.getElementById('chip-btn-request');
-    if (chipReq) chipReq.addEventListener('click', () => openRequestModal());
+    if (chipReq) chipReq.addEventListener('click', () => requireAuth(() => openRequestModal()));
 
     const chipLog = document.getElementById('chip-btn-drivelog');
-    if (chipLog) chipLog.addEventListener('click', () => openDriveLogModal());
+    if (chipLog) chipLog.addEventListener('click', () => requireAuth(() => openDriveLogModal()));
     const chipFuel = document.getElementById('chip-btn-fuel');
-    if (chipFuel) chipFuel.addEventListener('click', openFuelModal);
+    if (chipFuel) chipFuel.addEventListener('click', () => requireAuth(() => openFuelModal()));
     const chipReport = document.getElementById('chip-btn-report');
-    if (chipReport) chipReport.addEventListener('click', openMonthlyReportModal);
+    if (chipReport) chipReport.addEventListener('click', () => requireAuth(() => openMonthlyReportModal()));
     const chipStats = document.getElementById('chip-btn-stats');
-    if (chipStats) chipStats.addEventListener('click', openMonthlyReportModal);
+    if (chipStats) chipStats.addEventListener('click', () => requireAuth(() => openMonthlyReportModal()));
 
     // 2. 4종 퀵 서비스 그리드 클릭 이벤트
     const qReq = document.getElementById('quick-service-request');
-    if (qReq) qReq.addEventListener('click', () => openRequestModal());
+    if (qReq) qReq.addEventListener('click', () => requireAuth(() => openRequestModal()));
     const qLog = document.getElementById('quick-service-drivelog');
-    if (qLog) qLog.addEventListener('click', () => openDriveLogModal());
+    if (qLog) qLog.addEventListener('click', () => requireAuth(() => openDriveLogModal()));
     const qFuel = document.getElementById('quick-service-fuel');
-    if (qFuel) qFuel.addEventListener('click', () => openFuelModal());
+    if (qFuel) qFuel.addEventListener('click', () => requireAuth(() => openFuelModal()));
     const qAcc = document.getElementById('quick-service-accident');
-    if (qAcc) qAcc.addEventListener('click', () => openAccidentModal());
+    if (qAcc) qAcc.addEventListener('click', () => requireAuth(() => openAccidentModal()));
 
     // 3. (제거된 영웅 카드 버튼 리스너 영역)
 
     // 차량, 하이패스, 보험 등록 및 관리 버튼 핸들러
     const btnAddVeh = document.getElementById('btn-open-add-vehicle-modal');
-    if (btnAddVeh) btnAddVeh.addEventListener('click', () => openVehicleModal());
+    if (btnAddVeh) btnAddVeh.addEventListener('click', () => requireAuth(() => openVehicleModal()));
 
     const btnEmptyAdd = document.getElementById('btn-empty-add-vehicle');
-    if (btnEmptyAdd) btnEmptyAdd.addEventListener('click', () => openVehicleModal());
+    if (btnEmptyAdd) btnEmptyAdd.addEventListener('click', () => requireAuth(() => openVehicleModal()));
 
     document.querySelectorAll('.btn-edit-vehicle').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (!requireAuth()) return;
         const id = btn.dataset.id;
         const veh = AppStore.state.data.Vehicles.find(v => v.vehicle_id === id);
         if (veh) openVehicleModal(veh);
@@ -560,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', async (e) => {
       const editBtn = e.target.closest('.btn-edit-request');
       if (editBtn) {
+        if (!requireAuth()) return;
         const reqId = editBtn.dataset.id;
         const reqToEdit = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (reqToEdit) {
@@ -570,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const deleteBtn = e.target.closest('.btn-delete-request');
       if (deleteBtn) {
+        if (!requireAuth()) return;
         const reqId = deleteBtn.dataset.id;
         const reqToDelete = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (reqToDelete) {
@@ -584,6 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 운행 신청 기반 일지 작성 이벤트 위임 핸들러
       const createLogFromReqBtn = e.target.closest('.btn-create-drivelog-from-req');
       if (createLogFromReqBtn) {
+        if (!requireAuth()) return;
         const reqId = createLogFromReqBtn.dataset.id;
         const req = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (req) {
@@ -595,6 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 운행일지 수정 / 삭제 이벤트 위임 핸들러
       const editLogBtn = e.target.closest('.btn-edit-drivelog');
       if (editLogBtn) {
+        if (!requireAuth()) return;
         const logId = editLogBtn.dataset.id;
         const logToEdit = (AppStore.state.data.DriveLogs || []).find(l => String(l.log_id) === String(logId));
         if (logToEdit) {
@@ -605,6 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const deleteLogBtn = e.target.closest('.btn-delete-drivelog');
       if (deleteLogBtn) {
+        if (!requireAuth()) return;
         const logId = deleteLogBtn.dataset.id;
         const logToDelete = (AppStore.state.data.DriveLogs || []).find(l => String(l.log_id) === String(logId));
         if (logToDelete) {
@@ -1313,10 +1332,19 @@ document.addEventListener('DOMContentLoaded', () => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(form);
-        const identity = formData.get('identity');
-        const password = formData.get('password');
+        const identity = (formData.get('identity') || '').toString().trim();
+        const password = (formData.get('password') || '').toString().trim();
 
         if (errorMsg) errorMsg.style.display = 'none';
+
+        if (!identity || !password) {
+          if (errorMsg) {
+            errorMsg.textContent = `⚠️ 계정 아이디와 비밀번호를 모두 입력해주세요.`;
+            errorMsg.style.display = 'block';
+          }
+          return;
+        }
+
         setFormSavingState(form, true, '로그인 중...');
 
         try {
@@ -1332,6 +1360,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
           closeModal();
           showToast(`🎉 환영합니다! ${res.user.name} (${res.user.position}) 님 로그인 완료.`);
+        } catch (err) {
+          if (errorMsg) {
+            errorMsg.textContent = `⚠️ 로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.`;
+            errorMsg.style.display = 'block';
+          }
         } finally {
           setFormSavingState(form, false);
         }
