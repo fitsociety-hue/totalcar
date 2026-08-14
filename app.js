@@ -459,11 +459,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <button id="btn-open-monthly-report" class="btn-primary" style="margin-top:10px;">
-          📋 월별 운행일지 결재 보고서 조회 및 인쇄 (PDF)
+          📋 월별 운행일지 결재 보고서 조회 및 인쇄 (PDF / EXCEL)
         </button>
 
         ${AppComponents.renderVehicleManagementPanel(data.Vehicles, data.Insurance)}
-        ${AppComponents.renderGoogleWorkspacePanel()}
       </div>
     `;
   }
@@ -541,29 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // 구글 워크스페이스 메일 / 챗 테스트 버튼 핸들러
-    const btnGmail = document.getElementById('btn-gsuite-gmail-test');
-    if (btnGmail) {
-      btnGmail.addEventListener('click', async () => {
-        const user = AppStore.state.currentUser || { name: '김복지', email: 'kim@gde.or.kr' };
-        await AppAPI.request('sendEmailNotification', {
-          email: user.email,
-          subject: '[강동어울림복지관] 구글 워크스페이스 알림 테스트',
-          body: `안녕하세요 ${user.name} 님, 스마트 차량통합관리 구글 메일 알림 연동 테스트입니다.`
-        });
-        showToast(`📧 [Gmail] ${user.name} (${user.email}) 님 계정으로 알림 메일이 발송되었습니다.`);
-      });
-    }
-
-    const btnChat = document.getElementById('btn-gsuite-chat-test');
-    if (btnChat) {
-      btnChat.addEventListener('click', async () => {
-        await AppAPI.request('sendGoogleChatNotification', {
-          text: `💬 [강동어울림복지관 차량통합관리] 구글 챗 스페이스 알림 연동 완료!`
-        });
-        showToast(`💬 [Google Chat] 복지관 차량관리 구글 챗 스페이스 알림 전송 완료!`);
-      });
-    }
 
     // 예약 현황 선택차량/전체차량 필터 버튼 핸들러
     const btnFilterSelected = document.getElementById('btn-booking-filter-selected');
@@ -1278,6 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <h3 style="font-size:1.1rem; color:var(--accent-gold);">📋 월별 운행일지 보고서 (인쇄/PDF 미리보기)</h3>
           <div style="display:flex; gap:8px;">
+            <button id="btn-export-excel" class="btn-primary" style="padding:4px 12px; font-size:0.8rem; width:auto; background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFF;">📊 EXCEL 다운로드</button>
             <button onclick="window.print()" class="btn-primary" style="padding:4px 12px; font-size:0.8rem; width:auto;">🖨️ 인쇄 / PDF 출력</button>
             <button class="modal-close-btn" style="color:var(--text-muted);">✕</button>
           </div>
@@ -1286,6 +1263,28 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
     openModal();
+
+    const btnExcel = document.getElementById('btn-export-excel');
+    if (btnExcel) {
+      btnExcel.addEventListener('click', () => {
+        let csvContent = "\uFEFF";
+        csvContent += "운행일자,운전자,출발시간,도착시간,목적지,운행목적,출발km,도착km,운행거리(km),하이패스(잔액)\n";
+        logs.forEach(l => {
+          const dest = (l.destination || '').replace(/"/g, '""');
+          const purpose = (l.purpose || '').replace(/"/g, '""');
+          csvContent += `"${l.date}","${l.driver_name}","${l.depart_time}","${l.arrival_time}","${dest}","${purpose}","${l.start_km}","${l.end_km}","${l.distance_km}","${l.hipass_balance || ''}"\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `차량운행일지_${activeVeh.vehicle_id}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('📊 월별 운행일지 데이터가 엑셀(CSV) 형식으로 다운로드 되었습니다.');
+      });
+    }
   }
 
   function openLoginModal() {
