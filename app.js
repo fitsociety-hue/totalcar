@@ -480,6 +480,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
+   * 본인 작성 데이터 확인 가드 (이름, 팀명 일치 여부)
+   */
+  function isOwner(record) {
+    const user = AppStore.state.currentUser;
+    if (!user) return false;
+
+    const recordName = (record.applicant_name || record.writer_name || record.driver_name || record.name || '').toString().trim();
+    const recordTeam = (record.team || '').toString().trim();
+
+    if (!recordName) return true; // 작성자 정보가 없는 구형 데이터는 허용
+
+    if (recordTeam) {
+      return (recordName === user.name.toString().trim()) && (recordTeam === user.team.toString().trim());
+    }
+    return recordName === user.name.toString().trim();
+  }
+
+  /**
    * 탭 내 동적 버튼 이벤트 바인딩
    */
   function bindTabButtons() {
@@ -577,6 +595,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const reqId = editBtn.dataset.id;
         const reqToEdit = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (reqToEdit) {
+          if (!isOwner(reqToEdit)) {
+            showToast('⚠️ 본인이 작성한 데이터만 수정할 수 있습니다.', 'error');
+            return;
+          }
           openRequestModal(reqToEdit);
         }
         return;
@@ -588,9 +610,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const reqId = deleteBtn.dataset.id;
         const reqToDelete = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (reqToDelete) {
+          if (!isOwner(reqToDelete)) {
+            showToast('⚠️ 본인이 작성한 데이터만 삭제할 수 있습니다.', 'error');
+            return;
+          }
           if (confirm(`🗑️ [${reqToDelete.vehicle_id}] (${reqToDelete.drive_date} ${reqToDelete.start_time}~${reqToDelete.end_time}) 차량 운행 신청을 삭제(취소)하시겠습니까?`)) {
-            await AppStore.deleteDriveRequest(reqId);
-            showToast(`🗑️ 차량 운행 신청이 취소/삭제되었습니다.`);
+            const pin = prompt('삭제를 진행하려면 공통 삭제 비밀번호 4자리를 입력하세요.');
+            if (pin === '0741') {
+              await AppStore.deleteDriveRequest(reqId);
+              showToast(`🗑️ 차량 운행 신청이 취소/삭제되었습니다.`);
+            } else if (pin !== null) {
+              showToast('⚠️ 비밀번호가 일치하지 않습니다. 삭제가 취소되었습니다.', 'error');
+            }
           }
         }
         return;
@@ -603,6 +634,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const reqId = createLogFromReqBtn.dataset.id;
         const req = (AppStore.state.data.DriveRequests || []).find(r => String(r.request_id) === String(reqId));
         if (req) {
+          if (!isOwner(req)) {
+            showToast('⚠️ 본인이 신청한 내역에 대해서만 일지를 작성할 수 있습니다.', 'error');
+            return;
+          }
           openDriveLogModal(null, req);
         }
         return;
@@ -615,6 +650,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const logId = editLogBtn.dataset.id;
         const logToEdit = (AppStore.state.data.DriveLogs || []).find(l => String(l.log_id) === String(logId));
         if (logToEdit) {
+          if (!isOwner(logToEdit)) {
+            showToast('⚠️ 본인이 작성한 일지만 수정할 수 있습니다.', 'error');
+            return;
+          }
           openDriveLogModal(logToEdit);
         }
         return;
@@ -626,9 +665,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const logId = deleteLogBtn.dataset.id;
         const logToDelete = (AppStore.state.data.DriveLogs || []).find(l => String(l.log_id) === String(logId));
         if (logToDelete) {
+          if (!isOwner(logToDelete)) {
+            showToast('⚠️ 본인이 작성한 일지만 삭제할 수 있습니다.', 'error');
+            return;
+          }
           if (confirm(`🗑️ [${logToDelete.date}] (${logToDelete.driver_name}) 운행일지 기록을 삭제하시겠습니까?`)) {
-            await AppStore.deleteDriveLog(logId);
-            showToast(`🗑️ 차량 운행일지가 성공적으로 삭제되었습니다.`);
+            const pin = prompt('삭제를 진행하려면 공통 삭제 비밀번호 4자리를 입력하세요.');
+            if (pin === '0741') {
+              await AppStore.deleteDriveLog(logId);
+              showToast(`🗑️ 차량 운행일지가 성공적으로 삭제되었습니다.`);
+            } else if (pin !== null) {
+              showToast('⚠️ 비밀번호가 일치하지 않습니다. 삭제가 취소되었습니다.', 'error');
+            }
           }
         }
         return;
